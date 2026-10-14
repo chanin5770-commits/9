@@ -1266,8 +1266,8 @@
     });
   }
 
-  function drawSubtitles(ctx, t) {
-    for (let [t0, t1, text, style] of AD.SUBS) {
+  function drawSubtitles(ctx, t, subs = AD.SUBS) {
+    for (let [t0, t1, text, style] of subs) {
       if (t < t0 || t > t1) continue;
       const fin = easeOut(inv(t0, t0 + (style === 'power' ? 0.22 : 0.2), t));
       const fout = 1 - inv(t1 - 0.25, t1, t);
@@ -1320,6 +1320,8 @@
       ctx.restore();
     }
   }
+
+  AD.drawSubtitles = drawSubtitles;
 
   AD.render = function (ctx, t, k = 1, opts = {}) {
     t = clamp(t, 0, AD.DUR - 1e-4);

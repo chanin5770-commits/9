@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Film overlay render</title>
+<link rel="stylesheet" href="src/fonts.css">
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="src/timeline.js"></script>
+<script src="src/scenes.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/film.js"></script>
+<script>
+  // Hooks driven by tools/render-film.cjs
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  window.__ready = Promise.all([
+    document.fonts.load('500 54px Heebo', 'חשמל'), document.fonts.load('800 96px Heebo', 'חשמל'), AD.FILM.loadVoice(''),
+  ]);
+  window.__overlay = (t, subtitles = true) => { AD.FILM.renderOverlay(ctx, t, { subtitles }); return cv.toDataURL('image/png'); };
+  window.__audio = async () => {
+    const sr = 48000;
+    const oac = new OfflineAudioContext(2, sr * AD.FILM.DUR, sr);
+    AD.buildFilmAudio(oac, { startAt: 0 });
+    const bytes = AD.encodeWav(await oac.startRendering());
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+</script>
+</body>
+</html>

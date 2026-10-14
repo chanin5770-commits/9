@@ -61,7 +61,9 @@
     return buf;
   }
 
-  AD.buildAudio = function (ac, opts = {}) {
+  // Shared instrument kit: buses, effects and instruments, scheduled on the ad's clock.
+  // opts: startAt, from, destination, dur, fadeAt (master fade-out start), gaps ([[t0,t1]] silences)
+  AD.createKit = function (ac, opts = {}) {
     const T0 = opts.startAt ?? ac.currentTime + 0.05;
     const from = opts.from ?? 0;
     const dest = opts.destination || ac.destination;
@@ -71,9 +73,10 @@
 
     // ---------- buses ----------
     const master = ac.createGain();
+    const DUR = opts.dur ?? AD.DUR, fadeAt = opts.fadeAt ?? DUR - 0.6;
     master.gain.setValueAtTime(0.8, 0);
-    master.gain.setValueAtTime(0.8, at(29.4));
-    master.gain.linearRampToValueAtTime(0, at(AD.DUR));
+    master.gain.setValueAtTime(0.8, at(fadeAt));
+    master.gain.linearRampToValueAtTime(0, at(DUR));
     const comp = ac.createDynamicsCompressor();
     comp.threshold.value = -14; comp.knee.value = 8; comp.ratio.value = 3.5;
     comp.attack.value = 0.005; comp.release.value = 0.25;
@@ -83,8 +86,8 @@
     master.connect(comp);
     comp.connect(limiter);
     limiter.connect(dest);
-    // a breath of silence right before the two biggest hits
-    for (const [g0, g1] of [[18.3, 18.5], [25.75, 26.0]]) {
+    // a breath of silence right before the biggest hits
+    for (const [g0, g1] of opts.gaps || []) {
       master.gain.setValueAtTime(0.8, at(g0));
       master.gain.linearRampToValueAtTime(0.06, at(g0 + 0.05));
       master.gain.setValueAtTime(0.06, at(g1 - 0.01));
@@ -421,6 +424,73 @@
       sub.connect(se); out(se, 0);
     }
 
+
+    // Step sequencers bound to a tempo (beat length) and a chord track.
+    function seq(BT, chordAt) {
+      const arpPat = [0, 2, 1, 3, 2, 0, 3, 1, 0, 2, 1, 3, 2, 3, 1, 2];
+      return {
+        beat: (t0, n) => t0 + n * BT,
+        arpBar(t0, g, beats = 4, oct = 12) {
+          for (let i = 0; i < beats * 4; i++) {
+            const t = t0 + i * (BT / 4), v = chordAt(t)[2];
+            pluck(t, v[arpPat[i % 16]] + oct, g * (i % 4 === 0 ? 1 : 0.7), i % 2 ? 0.35 : -0.35);
+          }
+        },
+        bassBar(t0, g, beats = 4, cut = 700, sixteenths = false) {
+          const step = sixteenths ? BT / 4 : BT / 2;
+          for (let i = 0; i < (beats * BT) / step - 0.01; i++) {
+            const t = t0 + i * step, root = chordAt(t)[1];
+            bass(t, root + (i % 4 === 2 ? 12 : 0), step * 0.85, g * (i % 2 ? 0.75 : 1), cut);
+          }
+        },
+        hats(t0, g, beats = 4, every = 4) {
+          for (let i = 0; i < beats * 4; i++) if (i % (4 / every) === 0) hat(t0 + i * (BT / 4), g * (i % 4 === 2 ? 1 : 0.6));
+        },
+      };
+    }
+      // =====================================================================
+      // narration + ducking
+      // =====================================================================
+    function narrate(VO, voice) {
+      if (voice) {
+        const hp = filt('highpass', 90);
+        hp.connect(voiceBus);
+        const vw = ac.createGain(); vw.gain.value = 0.08; hp.connect(vw); vw.connect(rev);
+        for (const [s0, s1, place, , gain = 1] of VO) {
+          const dur = s1 - s0;
+          if (place + dur < from) continue;
+          const skip = Math.max(0, from - place);
+          const src = ac.createBufferSource();
+          src.buffer = voice;
+          const pg = ac.createGain();
+          pg.gain.value = gain;
+          src.connect(pg);
+          pg.connect(hp);
+          src.start(at(place + skip), s0 + skip, dur - skip);
+        }
+      }
+      // music dips to 35%, effects/impacts to 42% while a phrase is spoken
+      for (const [bus, lv] of [[music, 0.35], [sfx, 0.42]]) {
+        const dg = bus.gain;
+        dg.setValueAtTime(1, 0);
+        for (const [s0, s1, place] of VO) {
+          const end = place + (s1 - s0);
+          dg.setValueAtTime(1, at(place - 0.1));
+          dg.linearRampToValueAtTime(lv, at(place));
+          dg.setValueAtTime(lv, at(end));
+          dg.linearRampToValueAtTime(1, at(end + 0.3));
+        }
+      }
+
+    }
+    return { ac, at, live, rand, from, master, music, sfx, voiceBus, rev, shaper, seq, narrate, out, envGain, noiseSrc, osc, filt, tick, crackle, clack, whoosh, riser, boom, ting, zap, blip, metalHit, subDrop, reverseSwell, arc, chargeUp, passby, thunder, impact, kick, snare, hat, taiko, bass, pluck, lead, bell, braam };
+  };
+
+  // The animated 30s ad (storyboard cut).
+  AD.buildAudio = function (ac, opts = {}) {
+    const K = AD.createKit(ac, { ...opts, fadeAt: 29.4, gaps: [[18.3, 18.5], [25.75, 26.0]] });
+    const { at, live, rand, music, sfx, seq, narrate, out, envGain, noiseSrc, osc, filt, tick, crackle, clack, whoosh, riser, boom, ting, zap, blip, metalHit, subDrop, reverseSwell, arc, chargeUp, passby, thunder, impact, kick, snare, hat, taiko, bass, pluck, lead, bell, braam } = K;
+
     // =====================================================================
     // continuous beds
     // =====================================================================
@@ -481,24 +551,7 @@
     // =====================================================================
     // the score, bar by bar (bar n starts at 2 + 3n)
     // =====================================================================
-    const beat = (t0, n) => t0 + n * B;
-    const arpPat = [0, 2, 1, 3, 2, 0, 3, 1, 0, 2, 1, 3, 2, 3, 1, 2];
-    function arpBar(t0, g, beats = 4, oct = 12) {
-      for (let i = 0; i < beats * 4; i++) {
-        const t = t0 + i * (B / 4), v = chordAt(t)[2];
-        pluck(t, v[arpPat[i % 16]] + oct, g * (i % 4 === 0 ? 1 : 0.7), i % 2 ? 0.35 : -0.35);
-      }
-    }
-    function bassBar(t0, g, beats = 4, cut = 700, sixteenths = false) {
-      const step = sixteenths ? B / 4 : B / 2;
-      for (let i = 0; i < (beats * B) / step - 0.01; i++) {
-        const t = t0 + i * step, root = chordAt(t)[1];
-        bass(t, root + (i % 4 === 2 ? 12 : 0), step * 0.85, g * (i % 2 ? 0.75 : 1), cut);
-      }
-    }
-    function hats(t0, g, beats = 4, every = 4) {
-      for (let i = 0; i < beats * 4; i++) if (i % (4 / every) === 0) hat(t0 + i * (B / 4), g * (i % 4 === 2 ? 1 : 0.6));
-    }
+    const { beat, arpBar, bassBar, hats } = seq(B, chordAt);
 
     // ---- panel 1 (0–2): darkness, spark, ignition, pickup ----
     crackle(0.12, 12, 0.45, 0.1);
@@ -659,41 +712,10 @@
     // lead melody
     for (const [t, m, beats] of MELODY) lead(t, m, beats * B, t < 14 ? 0.035 : 0.05);
 
-    // =====================================================================
-    // narration + ducking
-    // =====================================================================
-    if (AD.voice) {
-      const hp = filt('highpass', 90);
-      hp.connect(voiceBus);
-      const vw = ac.createGain(); vw.gain.value = 0.08; hp.connect(vw); vw.connect(rev);
-      for (const [s0, s1, place, , gain = 1] of AD.VO) {
-        const dur = s1 - s0;
-        if (place + dur < from) continue;
-        const skip = Math.max(0, from - place);
-        const src = ac.createBufferSource();
-        src.buffer = AD.voice;
-        const pg = ac.createGain();
-        pg.gain.value = gain;
-        src.connect(pg);
-        pg.connect(hp);
-        src.start(at(place + skip), s0 + skip, dur - skip);
-      }
-    }
-    // music dips to 35%, effects/impacts to 42% while a phrase is spoken
-    for (const [bus, lv] of [[music, 0.35], [sfx, 0.42]]) {
-      const dg = bus.gain;
-      dg.setValueAtTime(1, 0);
-      for (const [s0, s1, place] of AD.VO) {
-        const end = place + (s1 - s0);
-        dg.setValueAtTime(1, at(place - 0.1));
-        dg.linearRampToValueAtTime(lv, at(place));
-        dg.setValueAtTime(lv, at(end));
-        dg.linearRampToValueAtTime(1, at(end + 0.3));
-      }
-    }
-
-    return master;
+    narrate(AD.VO, AD.voice);
+    return K.master;
   };
+
 
   // Encode an AudioBuffer as 16-bit PCM WAV bytes.
   AD.encodeWav = function (buf) {
