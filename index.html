@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>חשמלי — פרסומת 30 שניות</title>
+<link rel="stylesheet" href="src/fonts.css">
+<style>
+  :root { --bg:#05070b; --fg:#e9eef5; --muted:#8a95a6; --gold:#e0aa4e; --blue:#46a0ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:Heebo, Arial, sans-serif; }
+  main { max-width:1280px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-weight:800; font-size:28px; margin:0 0 4px; }
+  h1 span { color:var(--gold); }
+  .sub { color:var(--muted); margin:0 0 18px; }
+  .stage { position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:10px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  canvas { width:100%; height:100%; display:block; }
+  .cap { position:absolute; inset:auto 0 9% 0; text-align:center; font-size:clamp(14px,2.4vw,30px); font-weight:500; text-shadow:0 2px 8px #000; pointer-events:none; opacity:0; transition:opacity .2s; }
+  .cap.on { opacity:1; }
+  .big { position:absolute; inset:0; margin:auto; width:96px; height:96px; border-radius:50%; border:2px solid rgba(255,255,255,.7); background:rgba(0,0,0,.45); color:#fff; font-size:38px; cursor:pointer; }
+  .big[hidden] { display:none; }
+  .bar { display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  button.c { background:#141a24; color:var(--fg); border:1px solid #263041; border-radius:8px; padding:8px 14px; font:inherit; cursor:pointer; }
+  button.c:hover { border-color:var(--blue); }
+  input[type=range] { flex:1; min-width:160px; accent-color:var(--blue); direction:ltr; }
+  .time { font-variant-numeric:tabular-nums; color:var(--muted); direction:ltr; min-width:92px; }
+  label { color:var(--muted); display:flex; gap:6px; align-items:center; }
+  .links { margin-top:22px; color:var(--muted); line-height:1.9; }
+  .links a { color:var(--blue); }
+</style>
+</head>
+<body>
+<main>
+  <h1>פרסומת קולנועית — <span>חשמלי</span></h1>
+  <p class="sub">30 שניות · ללא דמויות · אנרגיה, תשתיות וטכנולוגיה · סאונד מסונתז מלא</p>
+  <div class="stage">
+    <canvas id="stage" width="1920" height="1080"></canvas>
+    <div class="cap" id="cap"></div>
+    <button class="big" id="big" aria-label="נגן">▶</button>
+  </div>
+  <div class="bar">
+    <button class="c" id="play">▶ נגן</button>
+    <button class="c" id="restart">⟲ מההתחלה</button>
+    <input type="range" id="seek" min="0" max="30" step="0.01" value="0" aria-label="ציר זמן">
+    <span class="time" id="time">0.00 / 30.00</span>
+    <label><input type="checkbox" id="caps" checked> כתוביות קריינות</label>
+    <label><input type="checkbox" id="mute"> השתק</label>
+  </div>
+  <div class="links">
+    <a href="dist/heshmali-ad-30s.mp4" download>⬇ הורדת הסרטון (MP4, 1080p)</a> ·
+    <a href="dist/narration.srt" download>⬇ קובץ תזמון קריינות (SRT)</a> ·
+    <a href="PROMPTS.md">פרומפטים ל-Claude / Kling</a><br>
+    הכתוביות בנגן מסמנות איפה הקריינות נכנסת. בסרטון עצמו אין טקסט מלבד הלוגו והסלוגן.
+  </div>
+</main>
+<script src="src/timeline.js"></script>
+<script src="src/scenes.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/player.js"></script>
+</body>
+</html>
