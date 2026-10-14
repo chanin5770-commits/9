@@ -1,6 +1,7 @@
 /* Shared timeline for the "חשמלי" 30s commercial.
- * Every visual scene and every sound effect reads its timing from here,
- * so picture and audio stay in sync in the live player and in the MP4 export. */
+ * Follows the 12-panel storyboard. Music runs at 80 BPM, so every 3-second
+ * panel is exactly one 4/4 bar and every cut lands on a downbeat.
+ * Picture, sound effects, music and narration all read their timing from here. */
 (function (global) {
   'use strict';
 
@@ -10,54 +11,66 @@
   AD.H = 1080;
   AD.DUR = 30;
 
-  // Scene blocks [start, end, id]
+  // ---------- musical grid ----------
+  AD.BPM = 80;
+  AD.BEAT = 60 / AD.BPM;   // 0.75 s
+  AD.BAR = AD.BEAT * 4;    // 3 s
+  AD.GRID0 = 2;            // bar 1 starts at 0:02 (0:00–0:02 is the pickup)
+
+  // ---------- storyboard panels ----------
+  // [start, end, scene, sourceStart?, sourceEnd?]
+  // Scenes with a source range are drawn by a renderer authored on its own clock;
+  // the panel's time is mapped linearly onto that range.
   AD.SCENES = [
-    [0.0, 2.0, 'intro'],       // black, rising hum, first spark
-    [2.0, 6.0, 'cable'],       // macro industrial cable, energy pulse
-    [6.0, 9.5, 'board'],       // switchboard, breakers close one by one
-    [9.5, 12.5, 'conduit'],    // camera flight along cable trays
-    [12.5, 17.0, 'building'],  // dark tower lights up floor by floor
-    [17.0, 21.5, 'montage'],   // EV charging, power lines, facade, data center
-    [21.5, 24.5, 'breaker'],   // silence, giant main breaker, BOOM
-    [24.5, 26.2, 'converge'],  // blue + gold energy converges to center
-    [26.2, 30.0, 'logo'],      // FLASH, logo reveal, tagline
+    [0.0, 0.45, 'intro', 1.5, 1.98],       // 1  darkness, first spark
+    [0.45, 2.0, 'cable', 2.0, 6.0],        // 1  power pulse through an industrial cable
+    [2.0, 5.0, 'conduit', 9.5, 12.5],      // 2  energy flows through cables and trays
+    [5.0, 8.0, 'board', 6.0, 9.5],         // 3  breakers close one after another
+    [8.0, 11.0, 'data'],                   // 4  infrastructure in big buildings, advanced systems
+    [11.0, 14.0, 'building', 12.5, 17.0],  // 5  tower lights up floor by floor, city wakes
+    [14.0, 17.0, 'city'],                  // 6  across environments: industry, commerce, institutions
+    [17.0, 20.0, 'ev'],                    // 7  EV charging, smart systems
+    [20.0, 23.0, 'grid'],                  // 8  large projects: solar fields, power lines at sunset
+    [23.0, 26.0, 'converge', 24.5, 26.2],  // 9  every energy line converges to one point
+    [26.0, 30.0, 'logo', 26.2, 30.2],      // 10–12  logo from energy, slogan, clean ending
   ];
 
-  // Breaker CLACK times in the switchboard scene
-  AD.BREAKERS = [6.45, 6.85, 7.25, 7.6, 7.9, 8.15, 8.4, 8.65];
+  // Breakers — on 8th notes, the last ones tighten to 16ths (panel time)
+  AD.BREAKERS_AT = [5.375, 5.75, 6.125, 6.5, 6.875, 7.25, 7.4375, 7.625];
+  AD.BREAKERS = AD.BREAKERS_AT.map((n) => 6.0 + ((n - 5.0) * 3.5) / 3); // board renderer clock
 
-  // Building: time floor k (0 = ground) lights up
+  // Building floors (panel time / renderer clock)
   AD.FLOORS = 16;
-  AD.floorTime = (k) => 13.05 + k * 0.17;
+  AD.floorAt = (k) => 11.375 + k * 0.125;   // sextuplet 16ths
+  AD.floorTime = (k) => 12.5 + (AD.floorAt(k) - 11.0) * 1.5;
 
-  // Montage sub-shots
-  AD.MONTAGE_START = 17.0;
-  AD.MONTAGE_SHOT = 1.125;
-
-  // Main breaker
-  AD.MAIN_CLICK = 22.0;
-  AD.MAIN_BOOM = 22.2;
-
-  // Logo
-  AD.FLASH = 26.2;
-  AD.TAGLINE = [
-    [27.1, 'עוצמה'],
-    [27.6, 'דיוק'],
-    [28.1, 'מקצועיות'],
+  // Logo renderer clock = panel time + 0.2
+  AD.FLASH = 26.2;                 // panel 26.0
+  AD.TAGLINE = [                   // panel 28.0 / 28.375 / 28.75 (8th notes)
+    [28.2, 'עוצמה'],
+    [28.575, 'דיוק'],
+    [28.95, 'מקצועיות'],
   ];
-  AD.LOGO_SPARK = 28.65;
-  AD.FINAL_HIT = 29.2;
-  AD.CUT_TO_BLACK = 29.75;
+  AD.LOGO_SPARK = 27.4;            // panel 27.2
+  AD.FINAL_HIT = 26.65;            // panel 26.45 — on the last spoken "חשמלי"
+  AD.CUT_TO_BLACK = 29.6;          // panel 29.4 — fade to the clean ending
 
-  // Voice-over cues [start, end, text] — the slots the music leaves open for the narrator
-  AD.CUES = [
-    [2.5, 4.8, 'כשזה חשמל — בוחרים נכון.'],
-    [8.9, 11.3, 'מתשתיות ולוחות חשמל...'],
-    [12.6, 16.2, 'ועד מערכות מתקדמות ופרויקטים מורכבים.'],
-    [20.0, 21.6, 'כאן אין מקום לפשרות.'],
-    [23.0, 24.4, 'יש חשמל...'],
-    [24.9, 26.4, 'ויש — חשמלי.'],
-    [27.1, 28.6, 'עוצמה. דיוק. מקצועיות.'],
-    [29.15, 29.9, 'חשמלי.'],
+  // ---------- narration ----------
+  // assets/narration.wav phrases: [sourceStart, sourceEnd, placeAt, text]
+  AD.VOICE_SRC = 'assets/narration.wav';
+  AD.VO = [
+    [0.0, 2.68, 2.25, 'כשזה חשמל — בוחרים נכון.'],
+    [3.1, 5.45, 5.25, 'מתשתיות ולוחות חשמל...'],
+    [5.79, 8.43, 8.2, 'ועד מערכות מתקדמות ופרויקטים מורכבים.'],
+    [9.34, 11.0, 11.85, 'כאן אין מקום לפשרות.'],
+    [11.36, 12.84, 14.45, 'יש חשמל...'],
+    [13.57, 15.52, 17.52, 'ויש — חשמלי.'],
+    [16.23, 16.83, 20.2, 'עוצמה.'],
+    [17.54, 18.3, 21.32, 'דיוק.'],
+    [18.78, 19.68, 22.44, 'מקצועיות.'],
+    [20.35, 21.05, 26.45, 'חשמלי.'],
   ];
+
+  // Captions for the player (derived from the narration placement)
+  AD.CUES = AD.VO.map(([s, e, at, text]) => [at, at + (e - s) + 0.15, text]);
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -35,8 +35,13 @@
     const fonts = document.fonts
       ? Promise.all([document.fonts.load('300 56px Heebo', 'עוצמה'), document.fonts.load('500 56px Heebo', 'עוצמה')])
       : Promise.resolve();
+    const voice = fetch(base + AD.VOICE_SRC)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('narration ' + r.status))))
+      .then((buf) => new OfflineAudioContext(1, 1, 48000).decodeAudioData(buf))
+      .then((ab) => { AD.voice = ab; })
+      .catch((e) => { console.warn('narration not loaded:', e.message); });
     prepPost();
-    return Promise.all([logo, fonts]);
+    return Promise.all([logo, fonts, voice]);
   };
 
   function makeCanvas(w, h) {
@@ -765,7 +770,7 @@
     ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 40); ctx.fill();
     ctx.fillStyle = '#0a0c10';
     ctx.beginPath(); ctx.roundRect(px + 40, py + 60, pw - 80, 110, 12); ctx.fill();
-    const charge = inv(0.62, 0.8, u);
+    const charge = inv(0.5, 0.6, u);   // ring lights on the drop (0:18.5)
     ctx.fillStyle = `rgba(${BLUE},${0.15 + 0.6 * charge})`;
     ctx.fillRect(px + 58, py + 140, (pw - 116) * charge, 12);
     // ring LED + holster
@@ -790,7 +795,7 @@
     ctx.lineWidth = 4;
     ctx.stroke();
     // energy: floor -> pillar -> ring
-    energy(ctx, [[-60, 960], [700, 960], [rc[0], 960], [rc[0], rc[1] + 74]], inv(0.0, 0.62, u), 4, BLUE);
+    energy(ctx, [[-60, 960], [700, 960], [rc[0], 960], [rc[0], rc[1] + 74]], inv(0.0, 0.5, u), 4, BLUE);
     // floor reflection of pillar
     ctx.save();
     ctx.globalAlpha = 0.12;
@@ -879,59 +884,6 @@
     }
   }
 
-  function shotFacade(ctx, t, u) {
-    ctx.fillStyle = '#03050a';
-    ctx.fillRect(0, 0, W, H);
-    // two-point perspective facade
-    const L = [[120, 1080], [120, 80]], R = [[1800, 760], [1800, 330]];
-    const quad = (s0, s1, v0, v1) => {
-      const P = (s, v) => [lerp(lerp(L[0][0], R[0][0], s), lerp(L[1][0], R[1][0], s), v), lerp(lerp(L[0][1], R[0][1], s), lerp(L[1][1], R[1][1], s), v)];
-      return [P(s0, v0), P(s1, v0), P(s1, v1), P(s0, v1)];
-    };
-    const P = (s, v) => [lerp(lerp(L[0][0], R[0][0], s), lerp(L[1][0], R[1][0], s), v), lerp(lerp(L[0][1], R[0][1], s), lerp(L[1][1], R[1][1], s), v)];
-    let q = quad(0, 1, 0, 1);
-    let g = ctx.createLinearGradient(120, 0, 1800, 0);
-    g.addColorStop(0, '#0d1626'); g.addColorStop(1, '#04070d');
-    ctx.fillStyle = g;
-    pathOf(ctx, q); ctx.fill();
-    // vertical fins
-    for (let i = 0; i <= 28; i++) {
-      const s = Math.pow(i / 28, 1.25);
-      const a = P(s, 0), b = P(s, 1);
-      ctx.strokeStyle = 'rgba(70,90,120,0.35)';
-      ctx.lineWidth = lerp(10, 3, s);
-      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
-    }
-    // LED bands sweeping in
-    const bands = 9;
-    for (let k = 0; k < bands; k++) {
-      const v = (k + 0.5) / bands;
-      const delay = k * 0.035;
-      const fs = clamp(inv(0.02 + delay, 0.75 + delay, u));
-      const pts = [];
-      for (let i = 0; i <= 20; i++) pts.push(P((i / 20) * Math.pow(fs, 0.8), v));
-      if (fs > 0) {
-        glowPath(ctx, pts, lerp(5, 3, v), k % 3 === 1 ? GOLD : BLUE, 0.85);
-        const h = pts[pts.length - 1];
-        if (fs < 1) flare(ctx, h[0], h[1], 120, 0.7, ICE, 0.8);
-      }
-      // warm windows between bands
-      for (let i = 0; i < 26; i++) {
-        const s = Math.pow((i + 0.5) / 26, 1.25);
-        if (s > Math.pow(fs, 0.8)) break;
-        const c = quad(s - 0.012, s + 0.012, v + 0.02, v + 0.085);
-        ctx.fillStyle = `rgba(255,190,120,${0.18 + 0.4 * rnd(k * 50 + i)})`;
-        pathOf(ctx, c); ctx.fill();
-      }
-    }
-    // plaza reflection glow
-    g = ctx.createLinearGradient(0, 860, 0, H);
-    g.addColorStop(0, `rgba(${BLUE},0)`);
-    g.addColorStop(1, `rgba(${BLUE},${0.18 * u})`);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 860, W, 220);
-  }
-
   function shotData(ctx, t, u) {
     const vp = [960, 520];
     ctx.fillStyle = '#020407';
@@ -973,110 +925,115 @@
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
   }
 
-  const MONTAGE = [shotEV, shotGrid, shotFacade, shotData];
+  // Aerial city: blocks of buildings, energy spreading along the streets.
+  const BLOCKS = [];
+  for (let i = -6; i <= 6; i++) {
+    for (let j = 0; j <= 13; j++) {
+      const q = rnd(i * 37 + j * 101);
+      const tall = Math.abs(i) < 3 && j > 3 && j < 9;
+      BLOCKS.push({ x: i * 12, z: j * 12, h: (tall ? 10 : 3) + q * (tall ? 26 : 9), q, kind: q > 0.86 ? 'ev' : 'b' });
+    }
+  }
 
-  function sceneMontage(ctx, t) {
-    const lt = t - AD.MONTAGE_START;
-    const m = Math.min(3, Math.floor(lt / AD.MONTAGE_SHOT));
-    const u = (lt - m * AD.MONTAGE_SHOT) / AD.MONTAGE_SHOT;
-    const sc = lerp(1.0, 1.07, u);
+  function shotCity(ctx, t, u) {
+    const f = 1050, pitch = 0.62;
+    const camX = lerp(-6, 6, ease(u)), camY = lerp(78, 64, ease(u)), camZ = lerp(-62, -48, ease(u));
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const proj = (x, y, z) => {
+      const dx = x - camX, dy = y - camY, dz = z - camZ;
+      const zc = -dy * sp + dz * cp, yc = dy * cp + dz * sp;
+      return zc > 1 ? [W / 2 + (dx / zc) * f, H / 2 - (yc / zc) * f, zc] : null;
+    };
+    let g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#02040b'); g.addColorStop(1, '#060b18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // energy spreads from the centre of the grid
+    const origin = [0, 72];
+    const front = lerp(0, 120, easeOut(inv(0.02, 0.85, u)));
+    const reach = (x, z) => clamp((front - Math.hypot(x - origin[0], z - origin[1])) / 10);
+
+    // streets
+    for (let k = -6; k <= 7; k++) {
+      const xs = k * 12 - 6;
+      for (let j = -1; j < 14; j++) {
+        const za = j * 12 + 6, zb = za + 12;
+        const a = proj(xs, 0, za), b = proj(xs, 0, zb);
+        if (!a || !b) continue;
+        const r = reach(xs, (za + zb) / 2);
+        ctx.strokeStyle = 'rgba(40,60,90,0.35)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+        if (r > 0) glowPath(ctx, [a, b], 3.2, BLUE, r * 0.8);
+      }
+    }
+    for (let j = -1; j <= 14; j++) {
+      const zs = j * 12 + 6;
+      for (let k = -6; k <= 6; k++) {
+        const xa = k * 12 - 6, xb = xa + 12;
+        const a = proj(xa, 0, zs), b = proj(xb, 0, zs);
+        if (!a || !b) continue;
+        const r = reach((xa + xb) / 2, zs);
+        ctx.strokeStyle = 'rgba(40,60,90,0.35)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+        if (r > 0) glowPath(ctx, [a, b], 3.2, j % 4 === 0 ? GOLD : BLUE, r * 0.8);
+      }
+    }
+
+    // buildings, far to near
+    const order = BLOCKS.slice().sort((p, q) => (q.z - p.z) || (Math.abs(q.x - camX) - Math.abs(p.x - camX)));
+    for (const B of order) {
+      const s = 4.2, x0 = B.x - s, x1 = B.x + s, z0 = B.z - s, z1 = B.z + s, h = B.h;
+      const r = reach(B.x, B.z);
+      const P = [proj(x0, 0, z0), proj(x1, 0, z0), proj(x1, h, z0), proj(x0, h, z0), proj(x0, h, z1), proj(x1, h, z1), proj(x0, 0, z1), proj(x1, 0, z1)];
+      if (P.some((p) => !p)) continue;
+      const poly = (pts, fill) => { ctx.fillStyle = fill; pathOf(ctx, pts); ctx.closePath(); ctx.fill(); };
+      // side face toward the camera
+      if (camX < x0) poly([P[0], P[3], P[4], P[6]], '#070b14');
+      else if (camX > x1) poly([P[1], P[2], P[5], P[7]], '#070b14');
+      // front face
+      poly([P[0], P[1], P[2], P[3]], '#0a1120');
+      // windows on the front face
+      const rows = Math.max(1, Math.floor(h / 2.2));
+      for (let rr = 0; rr < rows; rr++) {
+        for (let c = 0; c < 4; c++) {
+          const q = rnd(B.q * 1000 + rr * 13 + c);
+          if (q < 0.3) continue;
+          const on = r * (q > 0.55 ? 1 : 0.5);
+          const wx = lerp(x0 + 0.7, x1 - 0.7, (c + 0.5) / 4), wy = (rr + 0.55) * (h / rows);
+          const pc = proj(wx, wy, z0);
+          if (!pc) continue;
+          const sz = Math.max(1, (0.9 / pc[2]) * f);
+          ctx.fillStyle = on > 0.02 ? `rgba(255,${(180 + 40 * q) | 0},110,${0.15 + 0.75 * on})` : 'rgba(40,55,80,0.25)';
+          ctx.fillRect(pc[0] - sz / 2, pc[1] - sz * 0.6, sz, sz * 1.2);
+        }
+      }
+      // roof
+      poly([P[3], P[2], P[5], P[4]], '#111a2c');
+      if (r > 0) {
+        glowPath(ctx, [P[3], P[2], P[5], P[4], P[3]], 1.6, B.kind === 'ev' ? ICE : BLUE, r * 0.7);
+        if (B.kind === 'ev') flare(ctx, (P[3][0] + P[5][0]) / 2, (P[3][1] + P[5][1]) / 2, 60, r * 0.6, BLUE, 0.4);
+      }
+    }
+    // energy source flare
+    const o = proj(origin[0], 0, origin[1]);
+    if (o) flare(ctx, o[0], o[1], 300, 0.9 * (1 - 0.6 * u), ICE, 1.2);
+  }
+
+  // Panel wrapper for the standalone shots: slow push, flash-in on the cut.
+  const SHOTS = { data: shotData, city: shotCity, ev: shotEV, grid: shotGrid };
+  function shotScene(id, ctx, t, t0, t1) {
+    const u = inv(t0, t1, t);
+    const sc = lerp(1.0, 1.08, u);
     ctx.save();
     ctx.translate(W / 2, H / 2);
     ctx.scale(sc, sc);
-    ctx.translate(-W / 2 + lerp(20, -20, u), -H / 2);
-    MONTAGE[m](ctx, t, m === 3 ? clamp(u * 0.9) : u);
+    ctx.translate(-W / 2 + lerp(24, -24, u), -H / 2);
+    SHOTS[id](ctx, t, u);
     ctx.restore();
-    dust(ctx, t, 900 + m, 40, 0.25, ICE);
-    overlay(ctx, '#e8f4ff', Math.exp(-u * AD.MONTAGE_SHOT * 14) * 0.6);
-    overlay(ctx, '#000', easeIn(inv(21.05, 21.45, t)));
-  }
-
-  // =====================================================================
-  // SCENE 6 — silence, giant main breaker, BOOM
-  // =====================================================================
-  function sceneBreaker(ctx, t) {
-    if (t < 21.92) return;
-    const C = AD.MAIN_CLICK, B = AD.MAIN_BOOM;
-    const push = lerp(1.0, 1.08, ease(inv(21.9, 24.5, t)));
-    const rim = inv(21.92, 22.0, t);
-    ctx.save();
-    ctx.translate(W / 2, H / 2);
-    ctx.scale(push, push);
-    ctx.translate(-W / 2, -H / 2);
-
-    // breaker housing
-    const x = 640, y = 110, w = 640, h = 860;
-    ctx.globalAlpha = rim * 0.8 + 0.2 * rim;
-    ctx.drawImage(assets.brushed, 0, 0, 640, 860, x, y, w, h);
-    let g = ctx.createLinearGradient(x, 0, x + w, 0);
-    g.addColorStop(0, 'rgba(0,0,0,0.7)'); g.addColorStop(0.35, 'rgba(70,90,120,0.12)'); g.addColorStop(1, 'rgba(0,0,0,0.85)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x, y, w, h);
-    ctx.globalAlpha = 1;
-    // rim lights
-    ctx.strokeStyle = `rgba(140,190,255,${0.55 * rim})`;
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.roundRect(x, y, w, h, 24); ctx.stroke();
-    // big slot
-    ctx.fillStyle = '#020305';
-    ctx.beginPath(); ctx.roundRect(x + 220, y + 170, 200, 520, 20); ctx.fill();
-    // massive lever
-    const up = easeIn(inv(C, C + 0.11, t));
-    const ly = lerp(y + 470, y + 190, up);
-    g = ctx.createLinearGradient(x + 200, 0, x + 440, 0);
-    g.addColorStop(0, '#3c424b'); g.addColorStop(0.3, '#dfe5ec'); g.addColorStop(0.6, '#8d949e'); g.addColorStop(1, '#2a2e34');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.roundRect(x + 196, ly, 248, 200, 18); ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    for (let i = 0; i < 6; i++) ctx.fillRect(x + 220, ly + 30 + i * 26, 200, 8);
-    // status window
-    const on = inv(B, B + 0.1, t);
-    ctx.fillStyle = on ? `rgba(${BLUE},${0.4 + 0.6 * on})` : '#0a0d12';
-    ctx.beginPath(); ctx.roundRect(x + 250, y + 740, 140, 50, 10); ctx.fill();
-    ctx.restore();
-
-    // CLICK glint
-    flare(ctx, W / 2, 380, 240, pulse(t, C + 0.1, 0.01, 0.05) * 0.8, ICE, 1);
-
-    // BOOM — light wave floods the frame
-    if (t >= B) {
-      const a = t - B;
-      const wave = a * 2600;
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      g = ctx.createRadialGradient(W / 2, 540, Math.max(0, wave - 260), W / 2, 540, wave + 60);
-      g.addColorStop(0, `rgba(${BLUE},0)`);
-      g.addColorStop(0.7, `rgba(${ICE},${0.6 * Math.exp(-a * 2.5)})`);
-      g.addColorStop(1, `rgba(${BLUE},0)`);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
-      ctx.restore();
-      // radiating arcs
-      const fr = Math.floor(t * 30);
-      const arcA = Math.exp(-a * 1.6);
-      for (let i = 0; i < 22; i++) {
-        const ang = (i / 22) * TAU + rnd(i) * 0.2;
-        const len = 300 + Math.min(1, a * 3) * (600 + rnd(i * 3) * 600);
-        glowPath(ctx, boltPts(W / 2, 540, W / 2 + Math.cos(ang) * len, 540 + Math.sin(ang) * len, fr * 13 + i * 7, 6, 0.18), 2.2, i % 4 === 0 ? GOLD : BLUE, arcA * (0.4 + 0.6 * rnd(fr + i)));
-      }
-      flare(ctx, W / 2, 540, 900, Math.exp(-a * 1.2) * 0.9 + 0.12, BLUE, 2);
-      // slow-motion particles
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      for (let i = 0; i < 260; i++) {
-        const ang = rnd(i * 1.7) * TAU, sp = 40 + rnd(i * 2.9) * 520;
-        const r = sp * (1 - Math.exp(-a * 3)) / 3 * 4 + a * sp * 0.15;
-        const px = W / 2 + Math.cos(ang) * r, py = 540 + Math.sin(ang) * r * 0.8;
-        const al = clamp(1.1 - a / 2.4) * (0.4 + 0.6 * rnd(i * 4.4));
-        ctx.fillStyle = i % 5 === 0 ? `rgba(${GOLD},${al})` : `rgba(${ICE},${al})`;
-        const s = 1.2 + rnd(i * 6.1) * 3;
-        ctx.beginPath(); ctx.arc(px, py, s, 0, TAU); ctx.fill();
-      }
-      ctx.restore();
-      sparks(ctx, [W / 2, 520], t, B, 70, 2200, { spread: 0.05, speed: [400, 1500], life: [0.5, 1.4], grav: 500, slow: 0.6 });
-      overlay(ctx, '#f2f8ff', pulse(t, B, 0.03, 0.18) * 0.92);
-    }
-    overlay(ctx, '#000', easeIn(inv(24.25, 24.55, t)) * 0.85);
+    dust(ctx, t, 900 + t0, 50, 0.25, id === 'grid' ? GOLD : ICE);
+    overlay(ctx, '#e8f4ff', Math.exp(-(t - t0) * 9) * 0.6);
+    overlay(ctx, '#e8f4ff', easeIn(inv(t1 - 0.12, t1, t)) * 0.45);
   }
 
   // =====================================================================
@@ -1242,7 +1199,7 @@
       });
       ctx.restore();
       // thin gold rule
-      const rule = easeOut(inv(27.0, 28.4, t));
+      const rule = easeOut(inv(AD.TAGLINE[0][0] - 0.1, AD.TAGLINE[0][0] + 1.2, t));
       if (rule > 0) {
         ctx.save();
         g = ctx.createLinearGradient(cx - 420, 0, cx + 420, 0);
@@ -1256,14 +1213,18 @@
     }
 
     overlay(ctx, '#ffffff', Math.exp(-lt * 4.2) * 0.95);
-    overlay(ctx, '#000', t >= AD.CUT_TO_BLACK ? 1 : 0);
+    // clean ending: logo fades out, a few particles stay
+    overlay(ctx, '#000', easeIn(inv(AD.CUT_TO_BLACK, AD.CUT_TO_BLACK + 0.5, t)) * 0.98);
+    if (t > AD.CUT_TO_BLACK) dust(ctx, t, 2100, 70, 0.4 * inv(AD.CUT_TO_BLACK, AD.CUT_TO_BLACK + 0.5, t), BLUE);
   }
 
   // =====================================================================
   // camera shake, post, dispatch
   // =====================================================================
-  const IMPACTS = [[AD.MAIN_BOOM, 16, 0.9], [AD.FLASH, 12, 0.7], [AD.MAIN_CLICK + 0.11, 6, 0.25], [2.3, 5, 0.4]]
-    .concat(AD.BREAKERS.map((b, i) => [b, i < 3 ? 4 : 2.5, 0.18]));
+  // camera shake, in panel time
+  const IMPACTS = [[0.12, 3, 0.25], [0.57, 5, 0.4], [2.0, 4, 0.3], [8.0, 3, 0.25], [11.0, 3, 0.25], [17.0, 5, 0.35],
+    [18.5, 10, 0.7], [20.0, 7, 0.4], [21.125, 7, 0.4], [22.25, 7, 0.4], [26.0, 14, 0.8]]
+    .concat(AD.BREAKERS_AT.map((b, i) => [b, i < 3 ? 4 : 2.5, 0.18]));
 
   function shake(t) {
     let x = 0, y = 0;
@@ -1277,12 +1238,16 @@
     return [x, y];
   }
 
-  const DISPATCH = { intro: sceneIntro, cable: sceneCable, board: sceneBoard, conduit: sceneConduit, building: sceneBuilding, montage: sceneMontage, breaker: sceneBreaker, converge: sceneConverge, logo: sceneLogo };
+  const DISPATCH = { intro: sceneIntro, cable: sceneCable, board: sceneBoard, conduit: sceneConduit, building: sceneBuilding, converge: sceneConverge, logo: sceneLogo };
 
-  AD.sceneAt = (t) => {
-    for (const s of AD.SCENES) if (t >= s[0] && t < s[1]) return s[2];
-    return 'logo';
-  };
+  AD.panelAt = (t) => AD.SCENES.find((s) => t >= s[0] && t < s[1]) || AD.SCENES[AD.SCENES.length - 1];
+  AD.sceneAt = (t) => AD.panelAt(t)[2];
+
+  function drawPanel(ctx, t) {
+    const [t0, t1, id, s0, s1] = AD.panelAt(t);
+    if (SHOTS[id]) return shotScene(id, ctx, t, t0, t1);
+    DISPATCH[id](ctx, lerp(s0, s1, (t - t0) / (t1 - t0)));
+  }
 
   AD.render = function (ctx, t, k = 1) {
     t = clamp(t, 0, AD.DUR - 1e-4);
@@ -1295,7 +1260,7 @@
     ctx.fillRect(0, 0, W, H);
     const [sx, sy] = shake(t);
     ctx.translate(sx, sy);
-    DISPATCH[AD.sceneAt(t)](ctx, t);
+    drawPanel(ctx, t);
     ctx.restore();
 
     // post: vignette, grain, letterbox

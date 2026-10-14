@@ -1,36 +1,63 @@
-/* Synthesized sound design for the "חשמלי" commercial (Web Audio API).
- * AD.buildAudio(ac, {startAt, from, destination}) schedules the full 30s track on
- * any AudioContext or OfflineAudioContext. startAt = context time of ad t=0;
- * `from` skips one-shots before that ad time (used when playing from mid-ad). */
+/* Score, sound design and narration for the "חשמלי" commercial (Web Audio API).
+ *
+ * AD.buildAudio(ac, {startAt, from, destination}) schedules the full 30s mix on any
+ * AudioContext or OfflineAudioContext. startAt = context time of ad t=0; `from`
+ * skips events before that ad time (used when the player starts mid-ad).
+ *
+ * Music: 80 BPM in D minor, one 4/4 bar per storyboard panel (bar 1 = 0:02).
+ * Every cut, breaker CLACK, floor light and impact is placed on the beat grid.
+ * The music bus ducks under each narration phrase. */
 (function (global) {
   'use strict';
 
   const AD = global.AD;
+  const B = AD.BEAT;
+  const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+  // Chord track: [time, bass midi, voicing]
+  const CHORDS = [
+    [0.0, 38, [50, 57, 62, 64]],     // pickup drone: D5 add9
+    [2.0, 38, [50, 53, 57, 62]],     // Dm      panel 2
+    [5.0, 34, [46, 50, 53, 58]],     // Bb      panel 3
+    [8.0, 41, [53, 57, 60, 65]],     // F       panel 4
+    [9.5, 36, [48, 52, 55, 60]],     // C
+    [11.0, 38, [50, 53, 57, 62]],    // Dm      panel 5
+    [12.5, 34, [46, 50, 53, 58]],    // Bb
+    [14.0, 38, [50, 57, 62, 64]],    // D5 add9 panel 6 (quiet: "יש חשמל...")
+    [17.0, 33, [45, 49, 52, 57]],    // A       panel 7 ("ויש —")
+    [18.5, 38, [50, 53, 57, 62]],    // Dm      ("חשמלי" — the drop)
+    [20.0, 34, [46, 50, 53, 58]],    // Bb      panel 8 ("עוצמה")
+    [21.125, 41, [53, 57, 60, 65]],  // F       ("דיוק")
+    [22.25, 36, [48, 52, 55, 60]],   // C       ("מקצועיות")
+    [23.0, 43, [55, 58, 62, 67]],    // Gm      panel 9
+    [24.5, 33, [45, 49, 52, 57]],    // A       (dominant build)
+    [26.0, 38, [50, 57, 62, 66]],    // D major add9 — logo resolution
+  ];
+  const chordAt = (t) => { let c = CHORDS[0]; for (const x of CHORDS) if (x[0] <= t + 1e-6) c = x; return c; };
+
+  // Lead melody [time, midi, beats]
+  const MELODY = [
+    // panel 5 motif
+    [11.0, 69, 1], [11.75, 74, 0.5], [12.125, 72, 0.5], [12.5, 69, 1], [13.25, 67, 0.5], [13.625, 65, 0.5],
+    // the drop + panel 8 chorus
+    [18.5, 74, 1], [19.25, 77, 0.5], [19.625, 76, 0.5],
+    [20.0, 74, 1.5], [21.125, 72, 1.5], [22.25, 76, 1],
+    // panel 9 build
+    [23.0, 74, 2], [24.5, 73, 2],
+  ];
 
   function lcg(seed) {
     let s = seed >>> 0;
     return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   }
-
   function makeNoise(ac, seconds) {
-    const len = Math.floor(ac.sampleRate * seconds);
-    const buf = ac.createBuffer(2, len, ac.sampleRate);
-    const r = lcg(99);
-    for (let c = 0; c < 2; c++) {
-      const d = buf.getChannelData(c);
-      for (let i = 0; i < len; i++) d[i] = r() * 2 - 1;
-    }
+    const len = Math.floor(ac.sampleRate * seconds), buf = ac.createBuffer(2, len, ac.sampleRate), r = lcg(99);
+    for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < len; i++) d[i] = r() * 2 - 1; }
     return buf;
   }
-
   function makeIR(ac, seconds, decay) {
-    const len = Math.floor(ac.sampleRate * seconds);
-    const buf = ac.createBuffer(2, len, ac.sampleRate);
-    const r = lcg(7);
-    for (let c = 0; c < 2; c++) {
-      const d = buf.getChannelData(c);
-      for (let i = 0; i < len; i++) d[i] = (r() * 2 - 1) * Math.pow(1 - i / len, decay);
-    }
+    const len = Math.floor(ac.sampleRate * seconds), buf = ac.createBuffer(2, len, ac.sampleRate), r = lcg(7);
+    for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (r() * 2 - 1) * Math.pow(1 - i / len, decay); }
     return buf;
   }
 
@@ -42,29 +69,39 @@
     const live = (t) => t >= from - 0.02;
     const rand = lcg(2024);
 
-    // master chain
+    // ---------- buses ----------
     const master = ac.createGain();
-    master.gain.setValueAtTime(0.72, 0);
-    master.gain.setValueAtTime(0.72, at(AD.CUT_TO_BLACK - 0.05));
+    master.gain.setValueAtTime(0.8, 0);
+    master.gain.setValueAtTime(0.8, at(29.4));
     master.gain.linearRampToValueAtTime(0, at(AD.DUR));
     const comp = ac.createDynamicsCompressor();
-    comp.threshold.value = -12; comp.knee.value = 8; comp.ratio.value = 4;
-    comp.attack.value = 0.004; comp.release.value = 0.3;
+    comp.threshold.value = -14; comp.knee.value = 8; comp.ratio.value = 3.5;
+    comp.attack.value = 0.005; comp.release.value = 0.25;
     master.connect(comp);
     comp.connect(dest);
 
     const rev = ac.createConvolver();
-    rev.buffer = makeIR(ac, 3.4, 2.8);
+    rev.buffer = makeIR(ac, 3.2, 2.6);
     const revOut = ac.createGain();
-    revOut.gain.value = 0.4;
+    revOut.gain.value = 0.42;
     rev.connect(revOut);
     revOut.connect(master);
 
+    const music = ac.createGain();   // ducked under the narration
+    music.connect(master);
+    const sfx = ac.createGain();
+    sfx.connect(master);
+    const voiceBus = ac.createGain();
+    voiceBus.gain.value = 1.7;
+    voiceBus.connect(master);
+
     const noise = makeNoise(ac, 2.5);
 
-    function out(node, wet = 0) {
-      node.connect(master);
-      if (wet) { const g = ac.createGain(); g.gain.value = wet; node.connect(g); g.connect(rev); }
+    function out(node, wet = 0, bus = sfx, pan = 0) {
+      let n = node;
+      if (pan && ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = pan; n.connect(p); n = p; }
+      n.connect(bus);
+      if (wet) { const g = ac.createGain(); g.gain.value = wet; n.connect(g); g.connect(rev); }
     }
     function envGain(t, a, peak, d) {
       const g = ac.createGain();
@@ -75,8 +112,7 @@
     }
     function noiseSrc(t, dur) {
       const s = ac.createBufferSource();
-      s.buffer = noise;
-      s.loop = true;
+      s.buffer = noise; s.loop = true;
       s.start(at(t), rand() * 2);
       s.stop(at(t + dur + 0.05));
       return s;
@@ -94,51 +130,78 @@
       b.type = type; b.frequency.value = f; b.Q.value = q;
       return b;
     }
+    const shaper = (() => {
+      const c = new Float32Array(1024);
+      for (let i = 0; i < 1024; i++) { const x = (i / 1023) * 2 - 1; c[i] = Math.tanh(x * 3); }
+      return c;
+    })();
 
-    // ---------- one-shot instruments ----------
-    function tick(t, g, hp = 3500) {
+    // =====================================================================
+    // sound effects
+    // =====================================================================
+    function tick(t, g, hp = 3500, pan = 0) {
       if (!live(t)) return;
       const s = noiseSrc(t, 0.03), f = filt('highpass', hp), e = envGain(t, 0.0008, g, 0.012 + rand() * 0.02);
-      s.connect(f); f.connect(e); out(e, 0.15);
+      s.connect(f); f.connect(e); out(e, 0.15, sfx, pan);
     }
     function crackle(t, n, g, spread = 0.25) {
-      for (let i = 0; i < n; i++) tick(t + rand() * spread, g * (0.3 + rand() * 0.7), 2500 + rand() * 5000);
+      for (let i = 0; i < n; i++) tick(t + rand() * spread, g * (0.3 + rand() * 0.7), 2500 + rand() * 5000, (rand() - 0.5) * 1.2);
     }
     function clack(t, heavy = 1) {
       if (!live(t)) return;
-      let s = noiseSrc(t, 0.12), f = filt('lowpass', 2400, 1.2), e = envGain(t, 0.001, 0.55 * heavy, 0.07);
+      let s = noiseSrc(t, 0.12), f = filt('lowpass', 2400, 1.2), e = envGain(t, 0.001, 0.5 * heavy, 0.07);
       s.connect(f); f.connect(e); out(e, 0.25);
-      s = noiseSrc(t, 0.03); f = filt('highpass', 5200); e = envGain(t, 0.0005, 0.35 * heavy, 0.014);
+      s = noiseSrc(t, 0.03); f = filt('highpass', 5200); e = envGain(t, 0.0005, 0.32 * heavy, 0.014);
       s.connect(f); f.connect(e); out(e, 0.1);
       const o = osc('sine', 130, t, 0.25);
       o.frequency.exponentialRampToValueAtTime(48, at(t + 0.12));
-      e = envGain(t, 0.002, 0.8 * heavy, 0.16);
+      e = envGain(t, 0.002, 0.7 * heavy, 0.16);
       o.connect(e); out(e, 0.2);
     }
-    function whoosh(t, dur, f0, f1, g) {
+    function whoosh(t, dur, f0, f1, g, pan = 0, p1 = null) {
       if (!live(t)) return;
       const s = noiseSrc(t, dur), f = filt('bandpass', f0, 1.4);
       f.frequency.setValueAtTime(f0, at(t));
       f.frequency.exponentialRampToValueAtTime(f1, at(t + dur));
       const e = ac.createGain();
       e.gain.setValueAtTime(0.0001, at(t));
-      e.gain.exponentialRampToValueAtTime(g, at(t + dur * 0.7));
+      e.gain.exponentialRampToValueAtTime(g, at(t + dur * 0.75));
       e.gain.exponentialRampToValueAtTime(0.0001, at(t + dur));
-      s.connect(f); f.connect(e); out(e, 0.3);
+      s.connect(f); f.connect(e);
+      if (p1 !== null && ac.createStereoPanner) {
+        const p = ac.createStereoPanner();
+        p.pan.setValueAtTime(pan, at(t)); p.pan.linearRampToValueAtTime(p1, at(t + dur));
+        e.connect(p); out(p, 0.3);
+      } else out(e, 0.3, sfx, pan);
+    }
+    function riser(t, dur, g, f0 = 300, f1 = 6000) {
+      if (!live(t)) return;
+      const s = noiseSrc(t, dur), f = filt('bandpass', f0, 0.9), e = ac.createGain();
+      f.frequency.setValueAtTime(f0, at(t));
+      f.frequency.exponentialRampToValueAtTime(f1, at(t + dur));
+      e.gain.setValueAtTime(0.0001, at(t));
+      e.gain.exponentialRampToValueAtTime(g, at(t + dur - 0.01));
+      e.gain.setValueAtTime(0.0001, at(t + dur));
+      s.connect(f); f.connect(e); out(e, 0.35);
+      for (const [m, ty] of [[45, 'sawtooth'], [52, 'triangle']]) {
+        const o = osc(ty, mtof(m), t, dur), og = ac.createGain(), lp = filt('lowpass', 1800);
+        o.frequency.exponentialRampToValueAtTime(mtof(m + 24), at(t + dur));
+        og.gain.setValueAtTime(0.0001, at(t));
+        og.gain.exponentialRampToValueAtTime(g * 0.25, at(t + dur - 0.01));
+        og.gain.setValueAtTime(0.0001, at(t + dur));
+        o.connect(lp); lp.connect(og); out(og, 0.3);
+      }
     }
     function boom(t, size, g) {
       if (!live(t)) return;
       let o = osc('sine', 150, t, 3 * size);
-      o.frequency.exponentialRampToValueAtTime(30, at(t + 1.3 * size));
-      let e = envGain(t, 0.004, g, 2.4 * size);
+      o.frequency.exponentialRampToValueAtTime(30, at(t + 1.2 * size));
+      let e = envGain(t, 0.004, g, 2.2 * size);
       o.connect(e); out(e, 0.35);
-      o = osc('triangle', 42, t, 3.2 * size);
-      e = envGain(t, 0.01, g * 0.45, 3 * size);
-      o.connect(e); out(e, 0.2);
       const s = noiseSrc(t, 1.2 * size), f = filt('lowpass', 520, 0.8);
-      f.frequency.setValueAtTime(900, at(t));
+      f.frequency.setValueAtTime(1000, at(t));
       f.frequency.exponentialRampToValueAtTime(120, at(t + 0.9 * size));
-      e = envGain(t, 0.003, g * 0.7, 0.9 * size);
+      e = envGain(t, 0.003, g * 0.6, 0.9 * size);
       s.connect(f); f.connect(e); out(e, 0.6);
     }
     function ting(t, g) {
@@ -151,193 +214,330 @@
     function zap(t, dur, g) {
       if (!live(t)) return;
       const ws = ac.createWaveShaper();
-      const curve = new Float32Array(1024);
-      for (let i = 0; i < 1024; i++) { const x = (i / 1023) * 2 - 1; curve[i] = Math.tanh(x * 6); }
-      ws.curve = curve;
+      ws.curve = shaper;
       const bp = filt('bandpass', 1100, 0.9), e = envGain(t, 0.003, g, dur);
       [55, 82.5, 110.7].forEach((f) => { const o = osc('sawtooth', f, t, dur + 0.1); o.connect(ws); });
       ws.connect(bp); bp.connect(e); out(e, 0.3);
       crackle(t, 10, g * 0.7, dur);
     }
-    function kick(t, g) {
+    function blip(t, f, g, pan) {
       if (!live(t)) return;
-      const o = osc('sine', 165, t, 0.45);
-      o.frequency.exponentialRampToValueAtTime(46, at(t + 0.13));
-      const e = envGain(t, 0.002, g, 0.38);
-      o.connect(e); out(e, 0.12);
-    }
-    function softHit(t, g) {
-      if (!live(t)) return;
-      const o = osc('sine', 96, t, 0.9);
-      o.frequency.exponentialRampToValueAtTime(52, at(t + 0.3));
-      const e = envGain(t, 0.004, g, 0.8);
-      o.connect(e); out(e, 0.4);
-      const s = noiseSrc(t, 0.2), f = filt('lowpass', 800), e2 = envGain(t, 0.002, g * 0.25, 0.12);
-      s.connect(f); f.connect(e2); out(e2, 0.4);
+      const o = osc('sine', f, t, 0.08), e = envGain(t, 0.002, g, 0.05);
+      o.connect(e); out(e, 0.2, sfx, pan);
     }
 
-    // ---------- beds ----------
-    // 1. electrical hum: rises out of silence, carries the first half
+    // =====================================================================
+    // instruments
+    // =====================================================================
+    function kick(t, g, bus = music) {
+      if (!live(t)) return;
+      const o = osc('sine', 160, t, 0.5);
+      o.frequency.exponentialRampToValueAtTime(44, at(t + 0.13));
+      const e = envGain(t, 0.002, g, 0.42);
+      o.connect(e); out(e, 0.1, bus);
+      const c = noiseSrc(t, 0.02), f = filt('highpass', 3000), e2 = envGain(t, 0.0005, g * 0.25, 0.01);
+      c.connect(f); f.connect(e2); out(e2, 0, bus);
+    }
+    function snare(t, g, bus = music) {
+      if (!live(t)) return;
+      const s = noiseSrc(t, 0.3), f = filt('bandpass', 1900, 0.6), e = envGain(t, 0.001, g, 0.2);
+      s.connect(f); f.connect(e); out(e, 0.4, bus);
+      const o = osc('triangle', 200, t, 0.2);
+      o.frequency.exponentialRampToValueAtTime(130, at(t + 0.08));
+      const e2 = envGain(t, 0.001, g * 0.7, 0.1);
+      o.connect(e2); out(e2, 0.3, bus);
+    }
+    function hat(t, g, pan = 0.25) {
+      if (!live(t)) return;
+      const s = noiseSrc(t, 0.06), f = filt('highpass', 8000), e = envGain(t, 0.0008, g, 0.028);
+      s.connect(f); f.connect(e); out(e, 0.05, music, pan);
+    }
+    function taiko(t, g) {
+      if (!live(t)) return;
+      const o = osc('sine', 92, t, 1.0);
+      o.frequency.exponentialRampToValueAtTime(48, at(t + 0.3));
+      const e = envGain(t, 0.003, g, 0.8);
+      o.connect(e); out(e, 0.45);
+      const s = noiseSrc(t, 0.2), f = filt('lowpass', 900), e2 = envGain(t, 0.002, g * 0.35, 0.12);
+      s.connect(f); f.connect(e2); out(e2, 0.45);
+    }
+    function bass(t, m, dur, g, cut = 700) {
+      if (!live(t)) return;
+      const lp = filt('lowpass', cut, 3), e = envGain(t, 0.004, g, dur);
+      lp.frequency.setValueAtTime(cut * 2.2, at(t));
+      lp.frequency.exponentialRampToValueAtTime(cut * 0.6, at(t + dur));
+      const a = osc('sawtooth', mtof(m), t, dur + 0.05), sub = osc('sine', mtof(m - 12), t, dur + 0.05);
+      const sg = ac.createGain(); sg.gain.value = 0.9;
+      a.connect(lp); sub.connect(sg); sg.connect(e); lp.connect(e); out(e, 0.05, music);
+    }
+    function pluck(t, m, g, pan = 0, cut = 2600) {
+      if (!live(t)) return;
+      const lp = filt('lowpass', cut, 4), e = envGain(t, 0.002, g, 0.22);
+      lp.frequency.setValueAtTime(cut, at(t));
+      lp.frequency.exponentialRampToValueAtTime(260, at(t + 0.2));
+      const a = osc('sawtooth', mtof(m), t, 0.3), b = osc('square', mtof(m) * 1.003, t, 0.3);
+      a.connect(lp); b.connect(lp); lp.connect(e); out(e, 0.3, music, pan);
+    }
+    function lead(t, m, dur, g) {
+      if (!live(t)) return;
+      const lp = filt('lowpass', 2400, 1.2), e = ac.createGain();
+      e.gain.setValueAtTime(0.0001, at(t));
+      e.gain.linearRampToValueAtTime(g, at(t + 0.04));
+      e.gain.setValueAtTime(g * 0.85, at(t + dur - 0.05));
+      e.gain.exponentialRampToValueAtTime(0.0001, at(t + dur + 0.25));
+      const vib = osc('sine', 5.5, t, dur + 0.3), vg = ac.createGain();
+      vg.gain.setValueAtTime(0, at(t)); vg.gain.linearRampToValueAtTime(7, at(t + Math.min(0.4, dur)));
+      vib.connect(vg);
+      for (const [ty, det, mul, lv] of [['sawtooth', -7, 1, 0.5], ['sawtooth', 7, 1, 0.5], ['triangle', 0, 0.5, 0.6]]) {
+        const o = osc(ty, mtof(m) * mul, t, dur + 0.3);
+        o.detune.value = det;
+        vg.connect(o.detune);
+        const og = ac.createGain(); og.gain.value = lv;
+        o.connect(og); og.connect(lp);
+      }
+      lp.connect(e); out(e, 0.45, music);
+    }
+    function bell(t, m, g, bus = music) {
+      if (!live(t)) return;
+      const f = mtof(m);
+      [[1, 1, 2.2], [2.76, 0.4, 1.2], [5.4, 0.2, 0.6]].forEach(([k, lv, d]) => {
+        const o = osc('sine', f * k, t, d + 0.1), e = envGain(t, 0.002, g * lv, d);
+        o.connect(e); out(e, 0.6, bus);
+      });
+    }
+    function braam(t, root, dur, g) {
+      if (!live(t)) return;
+      const ws = ac.createWaveShaper(); ws.curve = shaper;
+      const lp = filt('lowpass', 300, 1.5), e = envGain(t, 0.02, g, dur);
+      lp.frequency.setValueAtTime(300, at(t));
+      lp.frequency.exponentialRampToValueAtTime(1600, at(t + 0.12));
+      lp.frequency.exponentialRampToValueAtTime(350, at(t + dur));
+      for (const [iv, det] of [[-12, -9], [-12, 9], [0, -6], [7, 5], [12, 0]]) {
+        const o = osc('sawtooth', mtof(root + iv), t, dur + 0.1);
+        o.detune.value = det;
+        o.connect(ws);
+      }
+      ws.connect(lp); lp.connect(e); out(e, 0.5);
+      const sub = osc('sine', mtof(root - 12), t, dur), se = envGain(t, 0.01, g * 1.2, dur);
+      sub.connect(se); out(se, 0);
+    }
+
+    // =====================================================================
+    // continuous beds
+    // =====================================================================
+    // electrical hum — rises out of the dark, carries panels 1–4
     {
-      const lp = filt('lowpass', 180, 3);
-      const g = ac.createGain();
-      [['sawtooth', 50], ['sawtooth', 50.4], ['sine', 100], ['square', 150]].forEach(([ty, f], i) => {
-        const o = osc(ty, f, 0, 17);
-        const og = ac.createGain();
-        og.gain.value = [0.5, 0.5, 0.6, 0.06][i];
+      const lp = filt('lowpass', 180, 3), g = ac.createGain();
+      [['sawtooth', 50], ['sawtooth', 50.4], ['sine', 100]].forEach(([ty, f], i) => {
+        const o = osc(ty, f, 0, 17), og = ac.createGain();
+        og.gain.value = [0.5, 0.5, 0.6][i];
         o.connect(og); og.connect(lp);
       });
       lp.connect(g); out(g, 0.05);
       const p = g.gain;
       p.setValueAtTime(0.0001, at(0));
-      p.exponentialRampToValueAtTime(0.05, at(1.5));
-      p.linearRampToValueAtTime(0.12, at(1.97));
-      p.setValueAtTime(0.07, at(2.0));
-      p.linearRampToValueAtTime(0.06, at(6.0));
-      p.linearRampToValueAtTime(0.05, at(9.5));
-      p.linearRampToValueAtTime(0.03, at(12.5));
-      p.exponentialRampToValueAtTime(0.0001, at(16.5));
-      lp.frequency.setValueAtTime(160, at(0));
-      lp.frequency.linearRampToValueAtTime(520, at(1.97));
-      lp.frequency.setValueAtTime(380, at(2.0));
+      p.exponentialRampToValueAtTime(0.09, at(0.4));
+      p.linearRampToValueAtTime(0.05, at(2.0));
+      p.linearRampToValueAtTime(0.03, at(8.0));
+      p.exponentialRampToValueAtTime(0.008, at(11.0));
+      p.linearRampToValueAtTime(0.04, at(14.3));   // returns for the tense "יש חשמל..."
+      p.exponentialRampToValueAtTime(0.0001, at(17.0));
+      lp.frequency.setValueAtTime(140, at(0));
+      lp.frequency.linearRampToValueAtTime(480, at(0.45));
+      lp.frequency.setValueAtTime(320, at(0.6));
     }
-    // 2. sizzle of live current during the cable + switchboard + conduit
+    // pad — follows the chord track, opens with the story
     {
-      const s = noiseSrc(2.0, 10.5), f = filt('bandpass', 3800, 2), g = ac.createGain();
-      g.gain.setValueAtTime(0.0001, at(2.0));
-      g.gain.linearRampToValueAtTime(0.025, at(2.4));
-      g.gain.linearRampToValueAtTime(0.018, at(9.5));
-      g.gain.linearRampToValueAtTime(0.0001, at(12.5));
-      s.connect(f); f.connect(g); out(g, 0.2);
-    }
-    // 3. cinematic music bed: opens with the building, drops for "כאן אין מקום לפשרות"
-    {
-      const chords = [
-        [12.5, [73.42, 110.0, 146.83, 174.61, 220.0]],
-        [15.0, [58.27, 116.54, 146.83, 174.61, 233.08]],
-        [17.0, [65.41, 130.81, 164.81, 196.0, 261.63]],
-        [18.5, [55.0, 110.0, 138.59, 164.81, 220.0]],
-      ];
-      const lp = filt('lowpass', 200, 1.1);
-      const g = ac.createGain();
-      for (let v = 0; v < 5; v++) {
-        for (const det of [-8, 8]) {
-          const o = osc('sawtooth', chords[0][1][v], 12.5, 9);
+      const lp = filt('lowpass', 300, 0.9), g = ac.createGain();
+      for (let v = 0; v < 4; v++) {
+        for (const det of [-9, 9]) {
+          const o = osc('sawtooth', mtof(CHORDS[0][2][v]), 0, AD.DUR);
           o.detune.value = det;
-          for (const [ct, fr] of chords) o.frequency.setTargetAtTime(fr[v], at(ct), 0.04);
-          const vg = ac.createGain();
-          vg.gain.value = v === 0 ? 0.3 : 0.16;
+          for (const [ct, , voicing] of CHORDS) o.frequency.setTargetAtTime(mtof(voicing[v]), at(ct), 0.05);
+          const vg = ac.createGain(); vg.gain.value = 0.16;
           o.connect(vg); vg.connect(lp);
         }
       }
-      lp.connect(g); out(g, 0.45);
-      lp.frequency.setValueAtTime(200, at(12.5));
-      lp.frequency.exponentialRampToValueAtTime(2200, at(19.9));
-      lp.frequency.setValueAtTime(260, at(19.97));
-      const p = g.gain;
-      p.setValueAtTime(0.0001, at(12.5));
-      p.exponentialRampToValueAtTime(0.09, at(14.0));
-      p.linearRampToValueAtTime(0.13, at(19.9));
-      p.exponentialRampToValueAtTime(0.008, at(20.05));
-      p.exponentialRampToValueAtTime(0.0001, at(21.3));
-    }
-    // 4. sub drone under "כאן אין מקום לפשרות"
-    {
-      const o = osc('sine', 41, 19.95, 1.6), g = ac.createGain();
-      g.gain.setValueAtTime(0.0001, at(19.95));
-      g.gain.linearRampToValueAtTime(0.09, at(20.2));
-      g.gain.exponentialRampToValueAtTime(0.0001, at(21.45));
-      o.connect(g); out(g);
+      lp.connect(g); out(g, 0.5, music);
+      const f = lp.frequency, p = g.gain;
+      f.setValueAtTime(260, at(0));
+      f.exponentialRampToValueAtTime(700, at(8));
+      f.exponentialRampToValueAtTime(1600, at(13.9));
+      f.setTargetAtTime(380, at(14.0), 0.08);
+      f.setTargetAtTime(1200, at(17.0), 0.5);
+      f.setTargetAtTime(2600, at(18.5), 0.1);
+      f.exponentialRampToValueAtTime(3200, at(25.9));
+      f.setTargetAtTime(1500, at(26.0), 1.2);
+      p.setValueAtTime(0.0001, at(0));
+      p.exponentialRampToValueAtTime(0.05, at(2.0));
+      p.linearRampToValueAtTime(0.08, at(11.0));
+      p.linearRampToValueAtTime(0.1, at(13.95));
+      p.setTargetAtTime(0.05, at(14.0), 0.1);
+      p.setTargetAtTime(0.09, at(17.0), 0.6);
+      p.setTargetAtTime(0.12, at(18.5), 0.05);
+      p.setTargetAtTime(0.14, at(26.0), 0.05);
+      p.setTargetAtTime(0.0001, at(28.6), 0.45);
     }
 
-    // ---------- the cue sheet ----------
-    // intro spark
-    crackle(1.62, 14, 0.5, 0.12);
-    zap(1.62, 0.12, 0.12);
-    crackle(1.9, 10, 0.6, 0.08);
-    // cable: ignition + chase
-    zap(2.3, 0.35, 0.18);
-    whoosh(2.25, 1.1, 300, 2800, 0.22);
-    whoosh(3.6, 1.0, 400, 3500, 0.16);
-    crackle(2.3, 40, 0.25, 3.3);
-    whoosh(5.3, 0.7, 500, 6000, 0.3);
-    boom(6.0, 0.5, 0.35);
-    // switchboard
-    whoosh(6.0, 0.45, 2000, 300, 0.12);
-    AD.BREAKERS.forEach((b, i) => { clack(b, i < 3 ? 1 : 0.65); crackle(b + 0.01, 4, 0.18, 0.08); });
-    // conduit flight
-    whoosh(9.3, 0.5, 600, 5000, 0.2);
-    for (let i = 0; i < 6; i++) whoosh(9.6 + i * 0.48, 0.42, 900 + i * 150, 250, 0.08 + i * 0.012);
-    crackle(9.5, 30, 0.15, 3);
-    // building: energy arrives, floors switch on
-    whoosh(12.4, 0.6, 3000, 300, 0.15);
-    for (let k = 0; k < AD.FLOORS; k++) tick(AD.floorTime(k), 0.07 + k * 0.004, 1800);
-    softHit(AD.floorTime(AD.FLOORS - 1) + 0.15, 0.25);
-    // pulse beat + riser
-    for (let b = 14.0; b < 18.5; b += 0.6) kick(b, 0.32);
-    for (let b = 18.5; b < 19.9; b += 0.3) kick(b, 0.42);
-    {
-      const s = noiseSrc(18.3, 1.7), f = filt('highpass', 400, 0.9), g = ac.createGain();
-      f.frequency.setValueAtTime(400, at(18.3));
-      f.frequency.exponentialRampToValueAtTime(7000, at(19.95));
-      g.gain.setValueAtTime(0.0001, at(18.3));
-      g.gain.exponentialRampToValueAtTime(0.12, at(19.93));
-      g.gain.setValueAtTime(0.0001, at(19.96));
-      s.connect(f); f.connect(g); out(g, 0.3);
-    }
-    // montage cuts
-    for (let m = 0; m < 4; m++) whoosh(AD.MONTAGE_START + m * AD.MONTAGE_SHOT - 0.18, 0.36, 400, 4000, 0.14);
-    zap(17.6, 0.2, 0.08);
-    // drop
-    softHit(19.97, 0.3);
-    // main breaker
-    clack(AD.MAIN_CLICK + 0.1, 1.5);
-    ting(AD.MAIN_CLICK + 0.1, 0.05);
-    boom(AD.MAIN_BOOM, 1.15, 0.85);
-    zap(AD.MAIN_BOOM, 0.6, 0.22);
-    crackle(AD.MAIN_BOOM, 30, 0.35, 0.9);
-    // convergence riser
-    {
-      const s = noiseSrc(24.5, 1.75), f = filt('bandpass', 200, 0.8), g = ac.createGain();
-      f.frequency.setValueAtTime(200, at(24.5));
-      f.frequency.exponentialRampToValueAtTime(5000, at(AD.FLASH));
-      g.gain.setValueAtTime(0.0001, at(24.5));
-      g.gain.exponentialRampToValueAtTime(0.2, at(AD.FLASH - 0.01));
-      g.gain.setValueAtTime(0.0001, at(AD.FLASH));
-      s.connect(f); f.connect(g); out(g, 0.4);
-      for (const [f0, ty] of [[110, 'sine'], [165, 'triangle']]) {
-        const o = osc(ty, f0, 24.6, 1.6), og = ac.createGain();
-        o.frequency.exponentialRampToValueAtTime(f0 * 6, at(AD.FLASH));
-        og.gain.setValueAtTime(0.0001, at(24.6));
-        og.gain.exponentialRampToValueAtTime(0.045, at(AD.FLASH - 0.01));
-        og.gain.setValueAtTime(0.0001, at(AD.FLASH));
-        o.connect(og); out(og, 0.3);
+    // =====================================================================
+    // the score, bar by bar (bar n starts at 2 + 3n)
+    // =====================================================================
+    const beat = (t0, n) => t0 + n * B;
+    const arpPat = [0, 2, 1, 3, 2, 0, 3, 1, 0, 2, 1, 3, 2, 3, 1, 2];
+    function arpBar(t0, g, beats = 4, oct = 12) {
+      for (let i = 0; i < beats * 4; i++) {
+        const t = t0 + i * (B / 4), v = chordAt(t)[2];
+        pluck(t, v[arpPat[i % 16]] + oct, g * (i % 4 === 0 ? 1 : 0.7), i % 2 ? 0.35 : -0.35);
       }
-      crackle(25.6, 18, 0.2, 0.6);
     }
-    // FLASH — logo: big clean boom + metallic ting + wide chord
-    boom(AD.FLASH, 1.5, 0.95);
-    ting(AD.FLASH + 0.02, 0.12);
-    {
-      const lp = filt('lowpass', 1400, 0.7), g = ac.createGain();
-      [36.71, 55.0, 73.42, 110.0, 146.83, 185.0].forEach((f, i) => {
-        const o = osc(i < 3 ? 'triangle' : 'sawtooth', f, AD.FLASH, 3.8);
-        const og = ac.createGain();
-        og.gain.value = i < 3 ? 0.35 : 0.1;
-        o.connect(og); og.connect(lp);
-      });
-      lp.frequency.setValueAtTime(1400, at(AD.FLASH));
-      lp.frequency.exponentialRampToValueAtTime(300, at(AD.FLASH + 3.5));
-      g.gain.setValueAtTime(0.0001, at(AD.FLASH));
-      g.gain.linearRampToValueAtTime(0.16, at(AD.FLASH + 0.03));
-      g.gain.exponentialRampToValueAtTime(0.0001, at(AD.DUR));
-      lp.connect(g); out(g, 0.5);
+    function bassBar(t0, g, beats = 4, cut = 700, sixteenths = false) {
+      const step = sixteenths ? B / 4 : B / 2;
+      for (let i = 0; i < (beats * B) / step - 0.01; i++) {
+        const t = t0 + i * step, root = chordAt(t)[1];
+        bass(t, root + (i % 4 === 2 ? 12 : 0), step * 0.85, g * (i % 2 ? 0.75 : 1), cut);
+      }
     }
-    AD.TAGLINE.forEach(([T]) => softHit(T, 0.22));
-    crackle(AD.LOGO_SPARK, 22, 0.22, 0.55);
-    zap(AD.LOGO_SPARK, 0.18, 0.06);
-    boom(AD.FINAL_HIT, 0.7, 0.5);
-    ting(AD.FINAL_HIT + 0.01, 0.1);
+    function hats(t0, g, beats = 4, every = 4) {
+      for (let i = 0; i < beats * 4; i++) if (i % (4 / every) === 0) hat(t0 + i * (B / 4), g * (i % 4 === 2 ? 1 : 0.6));
+    }
+
+    // ---- panel 1 (0–2): darkness, spark, ignition, pickup ----
+    crackle(0.12, 12, 0.45, 0.1);
+    zap(0.12, 0.1, 0.1);
+    crackle(0.375, 10, 0.55, 0.08);
+    zap(0.57, 0.35, 0.16);
+    whoosh(0.55, 0.9, 300, 3000, 0.22, -0.6, 0.6);
+    crackle(0.6, 26, 0.22, 1.3);
+    riser(1.0, 1.0, 0.13);
+    kick(beat(2, -1), 0.25); kick(beat(2, -0.5), 0.3);   // pickup into bar 1
+
+    // ---- panel 2 (2–5): energy flows through cables — Dm ----
+    boom(2.0, 0.6, 0.45); kick(2.0, 0.55); braam(2.0, 38, 1.4, 0.07);
+    for (const n of [0, 2, 2.5]) kick(beat(2, n), 0.45);
+    bassBar(2.0, 0.08, 4, 380);
+    for (let i = 0; i < 4; i++) whoosh(beat(2, i) - 0.25, 0.5, 700 + i * 200, 250, 0.08, i % 2 ? 0.7 : -0.7, i % 2 ? -0.7 : 0.7);
+    crackle(2.0, 24, 0.13, 3);
+    whoosh(4.7, 0.3, 500, 5000, 0.18);
+
+    // ---- panel 3 (5–8): the switchboard — Bb, breakers on 8ths ----
+    kick(5.0, 0.55); taiko(5.0, 0.3);
+    for (const n of [0, 1, 2, 3]) kick(beat(5, n), 0.42);
+    snare(beat(5, 2), 0.18);
+    bassBar(5.0, 0.09, 4, 550);
+    hats(5.0, 0.05, 4, 2);
+    AD.BREAKERS_AT.forEach((b, i) => { clack(b, i < 3 ? 1 : 0.7); crackle(b + 0.01, 4, 0.16, 0.06); });
+    whoosh(7.7, 0.3, 600, 5000, 0.16);
+
+    // ---- panel 4 (8–11): building infrastructure — F | C, arp enters ----
+    kick(8.0, 0.55); boom(8.0, 0.4, 0.25);
+    for (const n of [0, 1, 1.5, 2, 3, 3.5]) kick(beat(8, n), 0.42);
+    snare(beat(8, 2), 0.22);
+    bassBar(8.0, 0.1, 4, 700);
+    hats(8.0, 0.055, 4, 4);
+    arpBar(8.0, 0.045);
+    for (let i = 0; i < 18; i++) blip(8.0 + Math.floor(rand() * 16) * (B / 4), 1800 + Math.floor(rand() * 4) * 450, 0.035, (rand() - 0.5) * 1.4);
+    whoosh(10.7, 0.3, 500, 5000, 0.16);
+
+    // ---- panel 5 (11–14): the tower lights up — Dm | Bb, melody ----
+    kick(11.0, 0.55); taiko(11.0, 0.35);
+    for (const n of [0, 1, 2, 3]) kick(beat(11, n), 0.42);
+    for (const n of [1.5, 3.5]) kick(beat(11, n), 0.3);
+    snare(beat(11, 2), 0.24);
+    bassBar(11.0, 0.1, 4, 900);
+    hats(11.0, 0.06, 4, 4);
+    arpBar(11.0, 0.04);
+    for (let k = 0; k < AD.FLOORS; k++) {                 // each floor = a rising note
+      const v = chordAt(AD.floorAt(k))[2];
+      pluck(AD.floorAt(k), v[k % 4] + 12 + 12 * Math.floor(k / 8), 0.03 + k * 0.002, (k % 2 ? 0.5 : -0.5), 3800);
+      tick(AD.floorAt(k), 0.05, 2000);
+    }
+    riser(13.0, 1.0, 0.1);
+    snare(beat(11, 3.5), 0.16); snare(beat(11, 3.75), 0.2);
+
+    // ---- panel 6 (14–17): "יש חשמל..." — the music drops away ----
+    boom(14.0, 0.9, 0.5); taiko(14.0, 0.4); ting(14.02, 0.05);
+    for (const n of [1, 3]) kick(beat(14, n), 0.22);     // heartbeat
+    bass(14.0, 26, 2.8, 0.09, 200);
+    crackle(14.2, 30, 0.12, 2.6);
+    riser(16.0, 1.0, 0.14);
+
+    // ---- panel 7 (17–20): "ויש —" … "חשמלי" = the drop on beat 3 ----
+    kick(17.0, 0.5); snare(17.0, 0.15);
+    whoosh(16.75, 0.3, 400, 4000, 0.18);
+    for (const n of [0, 1]) bass(beat(17, n), 33, B * 0.9, 0.08, 500);
+    for (let i = 0; i < 8; i++) snare(beat(17, 1) + i * (B / 8), 0.04 + i * 0.012);   // roll into the drop
+    boom(18.5, 1.1, 0.75); braam(18.5, 38, 1.4, 0.13); ting(18.52, 0.08);
+    for (const n of [2, 2.5, 3, 3.5]) kick(beat(17, n), 0.5);
+    bassBar(18.5, 0.11, 2, 1100);
+    hats(18.5, 0.065, 2, 4);
+    arpBar(18.5, 0.05, 2);
+
+    // ---- panel 8 (20–23): "עוצמה. דיוק. מקצועיות." — a hit on every word ----
+    for (const [h, root] of [[20.0, 34], [21.125, 41], [22.25, 36]]) {
+      boom(h, 0.7, 0.42); braam(h, root, 1.0, 0.1); taiko(h, 0.32);
+    }
+    for (const n of [0, 1, 2, 3]) kick(beat(20, n), 0.42);
+    snare(beat(20, 2), 0.2);
+    bassBar(20.0, 0.1, 4, 1100);
+    hats(20.0, 0.06, 4, 4);
+    arpBar(20.0, 0.045);
+
+    // ---- panel 9 (23–26): everything converges — Gm → A, the build ----
+    kick(23.0, 0.5);
+    for (let i = 0; i < 4; i++) kick(beat(23, i), 0.45);
+    for (let i = 0; i < 4; i++) kick(beat(24.5, i * 0.5), 0.45);
+    for (let i = 0; i < 6; i++) kick(beat(25.25, i * 0.25), 0.4 + i * 0.02);
+    for (let i = 0; i < 16; i++) snare(23.0 + i * (B / 2), 0.04 + i * 0.006);            // 8ths
+    for (let i = 0; i < 8; i++) snare(beat(24.5, 2) + i * (B / 4), 0.14 + i * 0.012);     // 16ths
+    bassBar(23.0, 0.1, 2, 900);
+    bassBar(24.5, 0.11, 2, 1300, true);
+    arpBar(23.0, 0.045);
+    hats(23.0, 0.07, 4, 4);
+    riser(23.0, 2.95, 0.2, 200, 6500);
+    for (let i = 0; i < 6; i++) whoosh(23.1 + i * 0.45, 0.45, 600, 3000, 0.07, i % 2 ? 0.8 : -0.8, 0);
+    crackle(25.3, 18, 0.22, 0.6);
+
+    // ---- panels 10–12 (26–30): FLASH, logo, slogan, clean ending ----
+    boom(26.0, 1.5, 0.9); braam(26.0, 38, 2.6, 0.15); ting(26.02, 0.12); taiko(26.0, 0.4);
+    bass(26.0, 38, 3.2, 0.1, 500);
+    crackle(AD.LOGO_SPARK - 0.2, 20, 0.2, 0.55);
+    zap(AD.LOGO_SPARK - 0.2, 0.18, 0.05);
+    bell(26.75, 74, 0.05); bell(27.125, 81, 0.04);
+    AD.TAGLINE.forEach(([T], i) => { bell(T - 0.2, [86, 81, 78][i], 0.07); taiko(T - 0.2, 0.12); });
+    bell(29.125, 74, 0.05);
+
+    // lead melody
+    for (const [t, m, beats] of MELODY) lead(t, m, beats * B, t < 14 ? 0.035 : 0.05);
+
+    // =====================================================================
+    // narration + ducking
+    // =====================================================================
+    if (AD.voice) {
+      const hp = filt('highpass', 90);
+      hp.connect(voiceBus);
+      const vw = ac.createGain(); vw.gain.value = 0.08; hp.connect(vw); vw.connect(rev);
+      for (const [s0, s1, place] of AD.VO) {
+        const dur = s1 - s0;
+        if (place + dur < from) continue;
+        const skip = Math.max(0, from - place);
+        const src = ac.createBufferSource();
+        src.buffer = AD.voice;
+        src.connect(hp);
+        src.start(at(place + skip), s0 + skip, dur - skip);
+      }
+    }
+    // music dips to 35%, effects/impacts to 42% while a phrase is spoken
+    for (const [bus, lv] of [[music, 0.35], [sfx, 0.42]]) {
+      const dg = bus.gain;
+      dg.setValueAtTime(1, 0);
+      for (const [s0, s1, place] of AD.VO) {
+        const end = place + (s1 - s0);
+        dg.setValueAtTime(1, at(place - 0.1));
+        dg.linearRampToValueAtTime(lv, at(place));
+        dg.setValueAtTime(lv, at(end));
+        dg.linearRampToValueAtTime(1, at(end + 0.3));
+      }
+    }
 
     return master;
   };
