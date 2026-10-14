@@ -270,7 +270,14 @@
       ping(t + 0.12, 2093 + i * 60, 0.35, 0.4);
     });
     // "לבצע." slam
-    kick(18.5, 1.1); impact(18.5, 0.45);
+    kick(18.0, 1.1); impact(18.0, 0.45);
+    // a swish + open hat on every extra hard cut
+    P.CUTS.forEach((c) => {
+      const quiet = c > T.night && c < T.reveal;
+      whoosh(c - 0.32, 0.36, quiet ? 0.3 : 0.6, c % 4 < 2 ? -0.6 : 0.6, c % 4 < 2 ? 0.6 : -0.6);
+      if (!quiet) hat(c, 1.1, true, 0);
+    });
+    bell(28, 86, 0.5); bell(28, 81, 0.4);
     // 100%: celebration hit
     reverseSwell(T.done, 0.5, 0.7);
     impact(T.done, 0.8);

@@ -42,6 +42,9 @@
   ];
   NOTE_TEXT.forEach((n, i) => P.NOTES.push({ at: 0.5 + i * 0.25, kind: n[0], title: n[1], body: n[2] }));
 
+  // Extra hard cuts inside scenes (camera reframes); scene changes are cuts too.
+  P.CUTS = [2.0, 4.0, 6.5, 13.0, 14.5, 16.0, 19.0, 24.75, 28.0];
+
   P.CHAOS_WORDS = [[1.0, 'פתקים.'], [2.0, 'תזכורות.'], [3.0, 'רשימות.'], [4.0, 'ושום דבר לא זז.']];
 
   // The day inside the app: [time, title, kind]
@@ -105,6 +108,25 @@
     const ws = ['300', '400', '500', '600', '700', '800', '900'];
     return document.fonts ? Promise.all(ws.map((w) => document.fonts.load(`${w} 60px Heebo`, 'יומי Ab12'))) : Promise.resolve();
   };
+
+  // ---------- camera ----------
+  // shots: [start, zoom, zoomPerSec, focusX, focusY, roll]
+  function shotAt(list, t) { let s = list[0]; for (const x of list) if (t >= x[0]) s = x; return s; }
+  function camera(g, list, t) {
+    const [t0, z, dz, fx, fy, rot] = shotAt(list, t), k = z + dz * (t - t0);
+    g.translate(W / 2, H / 2); g.rotate(rot); g.scale(k, k); g.translate(-fx, -fy);
+  }
+  const CHAOS_SHOTS = [[0, 1, 0.02, W / 2, H / 2, 0], [2, 1.45, 0.04, W * 0.6, H * 0.42, -0.05], [4, 0.9, 0.03, W / 2, H / 2, 0.04]];
+  const PHONE_SHOTS = [
+    [0, 1, 0.015, W / 2, H / 2, 0],          // 11.0  wide: "כל שעה — במקום שלה."
+    [13, 1.65, 0.06, 600, 650, -0.04],       // 13.0  close on the rows filling in
+    [14.5, 1, 0.015, W / 2, H / 2, 0],       // 14.5  wide: "גם ההפסקות מתוכננות."
+    [16, 2.0, 0.08, 600, 600, 0.035],        // 16.0  macro on the break rows
+    [17, 1, 0.02, W / 2, H / 2, 0],          // 17.0  wide: "לא רק לרשום. לבצע."
+    [19, 1.5, 0.05, 560, 520, 0.025],        // 19.0  close: checks, ring, +10s
+    [21, 1, 0.02, W / 2, H / 2, 0],          // 21.0  wide: 100%
+  ];
+  const TOMORROW_SHOTS = [[0, 1, 0.01, W / 2, H / 2, 0], [24.75, 1.4, 0.05, W / 2, 720, -0.02]];
 
   // ---------- primitives ----------
   function rr(g, x, y, w, h, r) {
@@ -269,7 +291,7 @@
       x += v * fallT;
       y += 900 * fallT * fallT + 80 * fallT;
       rot += (rnd(i * 3.9) - 0.5) * 3 * fallT;
-      a = 1 - inv(0.3, 1.1, fallT);
+      a = 1 - inv(0.1, 0.55, fallT);
     }
     if (a <= 0) return;
     const s = back(k);
@@ -313,9 +335,7 @@
     g.save();
     const shake = inv(3, 5, t) * 6 * (t < T.night ? 1 : 0);
     g.translate(Math.sin(t * 53) * shake, Math.cos(t * 47) * shake);
-    // slow push-in feels claustrophobic
-    const z = 1 + t * 0.012;
-    g.translate(W / 2, H / 2); g.scale(z, z); g.translate(-W / 2, -H / 2);
+    camera(g, CHAOS_SHOTS, Math.min(t, T.night - 0.01));
     P.NOTES.forEach((n, i) => drawNote(g, n, i, t));
     g.restore();
     if (t >= T.night) return;
@@ -346,6 +366,7 @@
     const imp = easeIn(inv(T.implode, T.reveal - 0.05, t));
     g.save();
     g.translate(W / 2, H / 2);
+    if (t < 6.5) { g.scale(1.3, 1.3); g.translate(0, 40); }
     const s = (1 + (t - T.night) * 0.03) * (1 - imp * 0.96);
     g.scale(s, s);
     g.rotate(imp * 0.6);
@@ -697,7 +718,7 @@
   function headline(g, t, a, b, l1, l2, sub, o = {}) {
     // two-line headline living on the right half; fades out at b
     const out = inv(b - 0.3, b, t);
-    if (t < a || out >= 1) return;
+    if (t < a || out >= 1 || closeUp) return;
     const al = 1 - out;
     const x = o.x ?? 1700, y = o.y ?? 420;
     g.save();
@@ -708,8 +729,16 @@
     g.restore();
   }
 
+  let closeUp = false;
   function scenePhone(g, t) {
     if (t < T.plan - 0.2 || t > T.tomorrow + 0.8) return;
+    g.save();
+    camera(g, PHONE_SHOTS, t);
+    closeUp = shotAt(PHONE_SHOTS, t)[1] > 1.2; // close-ups show only the phone
+    phoneBody(g, t);
+    g.restore();
+  }
+  function phoneBody(g, t) {
     const st = phoneState(t);
     const enter = easeOut(inv(T.plan - 0.2, T.plan + 0.7, t));
     const leave = easeIn(inv(T.tomorrow - 0.1, T.tomorrow + 0.6, t));
@@ -737,8 +766,8 @@
     headline(g, t, T.plan + 0.6, T.breaks, 'כל שעה —', 'במקום *שלה.*', 'בונים את היום מראש, שעה אחרי שעה.');
     headline(g, t, T.breaks + 0.1, T.commit, 'גם ההפסקות', '*מתוכננות.*', 'כדי שיהיה כוח להמשיך עד הסוף.');
     headline(g, t, T.commit + 0.2, T.done, 'לא רק לרשום.', null, null, { y: 380 });
-    if (t >= 18.5 && t < T.done) {
-      const k = t - 18.5, s2 = 1 + 0.35 * Math.exp(-k / 0.1);
+    if (t >= 18.0 && t < T.done && !closeUp) {
+      const k = t - 18.0, s2 = 1 + 0.35 * Math.exp(-k / 0.1);
       g.save();
       g.translate(1440, 600); g.scale(s2, s2);
       g.globalAlpha = Math.min(1, k / 0.06) * (1 - inv(T.done - 0.25, T.done, t));
@@ -905,6 +934,7 @@
   }
   function sceneEnd(g, t) {
     if (t < T.end) return;
+    if (t >= 28) { endLockup(g, t); return; }
     const lt = t - T.end;
     // flash rings
     g.save();
@@ -932,16 +962,28 @@
       g.restore();
     }
     words(g, 'סדר יום *שמחייב.*', W / 2, 745, 64, 400, t, T.end + 0.9);
-    const bk = easeOut(inv(T.end + 1.6, T.end + 2.2, t));
+  }
+  function endLockup(g, t) {
+    const lt = t - 28, k = easeOut(clamp(lt / 0.5)), push = 1 + 0.02 * lt;
+    g.save();
+    g.translate(W / 2, H / 2); g.scale(push * lerp(1.12, 1, k), push * lerp(1.12, 1, k)); g.translate(-W / 2, -H / 2);
+    glow(g, 1200, 450, 520, VIOLET, 0.45);
+    glow(g, 760, 520, 600, CYAN, 0.12);
+    icon(g, 1200, 450, 280, t, 1);
+    g.save();
+    g.shadowColor = `rgba(${VIOLET},0.7)`; g.shadowBlur = 50;
+    text(g, 'יומי', 1010, 395, 180, 900, '#fff', 'right');
+    g.restore();
+    words(g, 'סדר יום *שמחייב.*', 1010, 535, 62, 400, t, 28.1, { align: 'right' });
+    const bk = easeOut(inv(28.3, 28.8, t));
     if (bk > 0) {
-      g.save();
       g.globalAlpha = bk;
       g.translate(0, (1 - bk) * 30);
-      text(g, 'בקרוב', W / 2, 852, 32, 500, 'rgba(225,230,255,0.7)');
-      storeBadge(g, W / 2 + 190, 945, 'App Store', 'apple');
-      storeBadge(g, W / 2 - 190, 945, 'Google Play', 'play');
-      g.restore();
+      text(g, 'בקרוב', W / 2, 735, 32, 500, 'rgba(225,230,255,0.7)');
+      storeBadge(g, W / 2 + 190, 830, 'App Store', 'apple');
+      storeBadge(g, W / 2 - 190, 830, 'Google Play', 'play');
     }
+    g.restore();
   }
 
   // ---------- frame ----------
@@ -956,10 +998,13 @@
     sceneNight(g, t);
     sceneReveal(g, t);
     scenePhone(g, t);
+    g.save();
+    if (t >= T.tomorrow && t < T.end) camera(g, TOMORROW_SHOTS, t);
     sceneTomorrow(g, t);
+    g.restore();
     sceneEnd(g, t);
     // flashes on the two big hits
-    const fl = Math.max(pulse(t, T.reveal, 0.18), 0.85 * pulse(t, T.end, 0.15), 0.35 * pulse(t, T.done, 0.12));
+    const fl = Math.max(0.3 * pulse(t, 28, 0.1), pulse(t, T.reveal, 0.18), 0.85 * pulse(t, T.end, 0.15), 0.35 * pulse(t, T.done, 0.12));
     if (fl > 0.003) { g.fillStyle = `rgba(255,255,255,${fl})`; g.fillRect(0, 0, W, H); }
     // a beat of black before the reveal
     const blk = win(t, T.reveal - 0.12, T.reveal, 0.06, 0.0001);
