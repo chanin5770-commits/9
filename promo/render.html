@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Yomi promo render</title>
+<link rel="stylesheet" href="../src/fonts.css">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="promo.js"></script>
+<script src="audio.js"></script>
+<script>
+  // Hooks driven by tools/render-promo.cjs
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  window.__ready = P.loadAssets();
+  window.__frame = (t, type = 'image/jpeg', q = 0.95) => { P.render(ctx, t); return cv.toDataURL(type, q); };
+  window.__audio = async () => {
+    const sr = 48000;
+    const oac = new OfflineAudioContext(2, sr * P.DUR, sr);
+    P.buildAudio(oac, { startAt: 0 });
+    const bytes = P.encodeWav(await oac.startRendering());
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+</script>
+</body>
+</html>
