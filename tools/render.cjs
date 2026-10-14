@@ -2,6 +2,7 @@
 /* Renders the commercial to MP4 (H.264 + AAC) using headless Chromium + ffmpeg.
  *
  *   node tools/render.cjs                      -> dist/heshmali-ad-30s.mp4
+ *   node tools/render.cjs --clean              -> dist/heshmali-ad-30s-clean.mp4 (no subtitles)
  *   node tools/render.cjs --fps 25 --out x.mp4
  *   node tools/render.cjs --stills 3,7.5,27.9 --stills-dir out/   (PNG frames only)
  *
@@ -20,7 +21,8 @@ const args = process.argv.slice(2);
 const opt = (name, def) => { const i = args.indexOf('--' + name); return i >= 0 ? args[i + 1] : def; };
 
 const FPS = Number(opt('fps', 30));
-const OUT = path.resolve(root, opt('out', 'dist/heshmali-ad-30s.mp4'));
+const CLEAN = args.includes('--clean');
+const OUT = path.resolve(root, opt('out', CLEAN ? 'dist/heshmali-ad-30s-clean.mp4' : 'dist/heshmali-ad-30s.mp4'));
 const STILLS = opt('stills', null);
 const STILLS_DIR = path.resolve(root, opt('stills-dir', 'dist/stills'));
 const DUR = 30;
@@ -51,7 +53,7 @@ function serve() {
   if (STILLS) {
     fs.mkdirSync(STILLS_DIR, { recursive: true });
     for (const s of STILLS.split(',').map(Number)) {
-      const data = await page.evaluate((t) => window.__frame(t, 'image/png'), s);
+      const data = await page.evaluate(([t, subs]) => window.__frame(t, 'image/png', 1, subs), [s, !CLEAN]);
       const file = path.join(STILLS_DIR, `frame-${s.toFixed(2).padStart(5, '0')}.png`);
       fs.writeFileSync(file, Buffer.from(data.split(',')[1], 'base64'));
       console.log(file);
@@ -62,7 +64,7 @@ function serve() {
   }
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
-  const wav = OUT.replace(/\.mp4$/, '') + '.wav';
+  const wav = path.resolve(root, 'dist/heshmali-ad-30s.wav');
   console.log('rendering audio…');
   const b64 = await page.evaluate(() => window.__audio());
   fs.writeFileSync(wav, Buffer.from(b64, 'base64'));
@@ -80,7 +82,7 @@ function serve() {
 
   const total = DUR * FPS;
   for (let i = 0; i < total; i++) {
-    const data = await page.evaluate((t) => window.__frame(t), i / FPS);
+    const data = await page.evaluate(([t, subs]) => window.__frame(t, 'image/jpeg', 0.95, subs), [i / FPS, !CLEAN]);
     if (!ff.stdin.write(Buffer.from(data.split(',')[1], 'base64'))) await new Promise((r) => ff.stdin.once('drain', r));
     if (i % FPS === 0) process.stdout.write(`\r  ${i / FPS}s / ${DUR}s`);
   }

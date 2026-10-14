@@ -16,7 +16,7 @@
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
   window.__ready = AD.loadAssets('');
-  window.__frame = (t, type = 'image/jpeg', q = 0.95) => { AD.render(ctx, t, 1); return cv.toDataURL(type, q); };
+  window.__frame = (t, type = 'image/jpeg', q = 0.95, subtitles = true) => { AD.render(ctx, t, 1, { subtitles }); return cv.toDataURL(type, q); };
   window.__audio = async () => {
     const sr = 48000;
     const oac = new OfflineAudioContext(2, sr * AD.DUR, sr);

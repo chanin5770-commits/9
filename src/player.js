@@ -3,7 +3,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const cv = $('stage'), ctx = cv.getContext('2d');
-  const cap = $('cap'), seek = $('seek'), time = $('time'), big = $('big'), playBtn = $('play');
+  const seek = $('seek'), time = $('time'), big = $('big'), playBtn = $('play');
 
   let ac = null, bus = null, startAt = 0, playing = false, cur = 27.9, ready = false;
 
@@ -48,12 +48,9 @@
       cur = Math.max(0, ac.currentTime - startAt);
       if (cur >= AD.DUR) { cur = AD.DUR; pause(); big.hidden = false; }
     }
-    if (ready) AD.render(ctx, Math.min(cur, AD.DUR - 1e-3), cv.width / AD.W);
+    if (ready) AD.render(ctx, Math.min(cur, AD.DUR - 1e-3), cv.width / AD.W, { subtitles: $('caps').checked });
     seek.value = cur;
     time.textContent = `${cur.toFixed(2)} / ${AD.DUR.toFixed(2)}`;
-    const cue = AD.CUES.find(([a, b]) => cur >= a && cur < b);
-    cap.textContent = cue ? cue[2] : '';
-    cap.classList.toggle('on', !!cue && $('caps').checked && (playing || cur > 0));
     requestAnimationFrame(frame);
   }
 

@@ -1249,7 +1249,79 @@
     DISPATCH[id](ctx, lerp(s0, s1, (t - t0) / (t1 - t0)));
   }
 
-  AD.render = function (ctx, t, k = 1) {
+  // ---------- subtitles ----------
+  const SUB_FONT = 'Heebo, "Noto Sans Hebrew", Arial, sans-serif';
+
+  // Lay out an RTL phrase word by word so "חשמלי" can be picked out in gold.
+  function rtlWords(ctx, text, xCenter, y, gold) {
+    const words = text.split(' ');
+    const space = ctx.measureText(' ').width;
+    const widths = words.map((w) => ctx.measureText(w).width);
+    let x = xCenter + (widths.reduce((a, b) => a + b, 0) + space * (words.length - 1)) / 2;
+    ctx.textAlign = 'right';
+    words.forEach((w, i) => {
+      ctx.fillStyle = w.includes('חשמלי') ? gold : ctx.__subFill;
+      ctx.fillText(w, x, y);
+      x -= widths[i] + space;
+    });
+  }
+
+  function drawSubtitles(ctx, t) {
+    for (let [t0, t1, text, style] of AD.SUBS) {
+      if (t < t0 || t > t1) continue;
+      const fin = easeOut(inv(t0, t0 + (style === 'power' ? 0.22 : 0.2), t));
+      const fout = 1 - inv(t1 - 0.25, t1, t);
+      const a = fin * fout;
+      if (a <= 0.01) continue;
+      ctx.save();
+      ctx.direction = 'rtl';
+      ctx.textBaseline = 'middle';
+      if (style === 'power') {
+        // big word punched in on the impact: scale down, glow, gold underline
+        const sc = lerp(1.35, 1.0, fin);
+        const y = 905;
+        ctx.translate(W / 2, y);
+        ctx.scale(sc, sc);
+        ctx.font = `800 96px ${SUB_FONT}`;
+        ctx.textAlign = 'center';
+        text = text.replace(/\.$/, '');
+        ctx.globalAlpha = a;
+        ctx.shadowColor = 'rgba(70,160,255,0.9)';
+        ctx.shadowBlur = 40 * (1 - 0.6 * fin) + 12;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(text, 0, 0);
+        ctx.shadowBlur = 0;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = a * pulse(t, t0, 0.02, 0.12) * 0.7;
+        ctx.fillText(text, 0, 0);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = a;
+        const w = ctx.measureText(text).width * easeOut(inv(t0 + 0.05, t0 + 0.45, t));
+        const g = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
+        g.addColorStop(0, 'rgba(224,170,78,0)'); g.addColorStop(0.5, 'rgba(224,170,78,1)'); g.addColorStop(1, 'rgba(224,170,78,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(-w / 2, 62, w, 3);
+      } else {
+        const y = 946 + (1 - fin) * 14;
+        // soft shade behind the lower third so lines read over bright shots
+        const band = ctx.createLinearGradient(0, H - 260, 0, H - 54);
+        band.addColorStop(0, 'rgba(0,0,0,0)');
+        band.addColorStop(1, `rgba(0,0,0,${0.55 * a})`);
+        ctx.fillStyle = band;
+        ctx.fillRect(0, H - 260, W, 206);
+        ctx.font = `500 54px ${SUB_FONT}`;
+        ctx.globalAlpha = a;
+        ctx.__subFill = '#f3f6fa';
+        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+        ctx.shadowBlur = 16;
+        ctx.shadowOffsetY = 2;
+        rtlWords(ctx, text, W / 2, y, '#f0b85a');
+      }
+      ctx.restore();
+    }
+  }
+
+  AD.render = function (ctx, t, k = 1, opts = {}) {
     t = clamp(t, 0, AD.DUR - 1e-4);
     ctx.__k = k;
     ctx.save();
@@ -1277,6 +1349,7 @@
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, 54);
     ctx.fillRect(0, H - 54, W, 54);
+    if (opts.subtitles !== false) drawSubtitles(ctx, t);
     ctx.restore();
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -56,7 +56,7 @@
   AD.CUT_TO_BLACK = 29.6;          // panel 29.4 — fade to the clean ending
 
   // ---------- narration ----------
-  // assets/narration.wav phrases: [sourceStart, sourceEnd, placeAt, text]
+  // assets/narration.wav phrases: [sourceStart, sourceEnd, placeAt, text, gain?]
   AD.VOICE_SRC = 'assets/narration.wav';
   AD.VO = [
     [0.0, 2.68, 2.25, 'כשזה חשמל — בוחרים נכון.'],
@@ -66,11 +66,21 @@
     [11.36, 12.84, 14.45, 'יש חשמל...'],
     [13.57, 15.52, 17.52, 'ויש — חשמלי.'],
     [16.23, 16.83, 20.2, 'עוצמה.'],
-    [17.54, 18.3, 21.32, 'דיוק.'],
+    [17.54, 18.3, 21.32, 'דיוק.', 1.8],   // quieter in the recording
     [18.78, 19.68, 22.44, 'מקצועיות.'],
     [20.35, 21.05, 26.45, 'חשמלי.'],
   ];
 
-  // Captions for the player (derived from the narration placement)
-  AD.CUES = AD.VO.map(([s, e, at, text]) => [at, at + (e - s) + 0.15, text]);
+  // Subtitles burned into the picture: [start, end, text, style]
+  // 'line'  = lower-third subtitle; 'power' = big dramatic word (panel 8).
+  // The last "חשמלי" plays over the logo itself, so it gets no subtitle.
+  AD.SUBS = [];
+  AD.VO.forEach(([s, e, at, text], i) => {
+    if (at >= 26) return;
+    const power = at >= 20 && at < 23;
+    const next = AD.VO[i + 1];
+    const end = power ? (next && next[2] < 23 ? next[2] - 0.02 : 23.0) : at + (e - s) + 0.4;
+    AD.SUBS.push([at - 0.06, end, text, power ? 'power' : 'line']);
+  });
+  AD.CUES = AD.SUBS;
 })(typeof window !== 'undefined' ? window : globalThis);

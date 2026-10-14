@@ -77,8 +77,19 @@
     const comp = ac.createDynamicsCompressor();
     comp.threshold.value = -14; comp.knee.value = 8; comp.ratio.value = 3.5;
     comp.attack.value = 0.005; comp.release.value = 0.25;
+    const limiter = ac.createDynamicsCompressor();   // brick-wall safety for the big hits
+    limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20;
+    limiter.attack.value = 0.001; limiter.release.value = 0.1;
     master.connect(comp);
-    comp.connect(dest);
+    comp.connect(limiter);
+    limiter.connect(dest);
+    // a breath of silence right before the two biggest hits
+    for (const [g0, g1] of [[18.3, 18.5], [25.75, 26.0]]) {
+      master.gain.setValueAtTime(0.8, at(g0));
+      master.gain.linearRampToValueAtTime(0.06, at(g0 + 0.05));
+      master.gain.setValueAtTime(0.06, at(g1 - 0.01));
+      master.gain.linearRampToValueAtTime(0.8, at(g1));
+    }
 
     const rev = ac.createConvolver();
     rev.buffer = makeIR(ac, 3.2, 2.6);
@@ -224,6 +235,94 @@
       if (!live(t)) return;
       const o = osc('sine', f, t, 0.08), e = envGain(t, 0.002, g, 0.05);
       o.connect(e); out(e, 0.2, sfx, pan);
+    }
+
+    // ---------- dramatic layer ----------
+    // Metallic clang: inharmonic partials + bright transient.
+    function metalHit(t, g, pan = 0) {
+      if (!live(t)) return;
+      [[523, 1, 1.1], [1187, 0.7, 0.8], [1730, 0.5, 0.6], [2611, 0.35, 0.45], [3890, 0.22, 0.3]].forEach(([f, m, d], i) => {
+        const o = osc(i % 2 ? 'triangle' : 'sine', f * (1 + (rand() - 0.5) * 0.01), t, d + 0.1), e = envGain(t, 0.001, g * m * 0.5, d);
+        o.connect(e); out(e, 0.6, sfx, pan);
+      });
+      const s = noiseSrc(t, 0.1), f = filt('bandpass', 3200, 1.5), e = envGain(t, 0.0005, g * 0.8, 0.05);
+      s.connect(f); f.connect(e); out(e, 0.4, sfx, pan);
+    }
+    // Sub drop: a falling sine that you feel more than hear.
+    function subDrop(t, g, dur = 2.2) {
+      if (!live(t)) return;
+      const o = osc('sine', 95, t, dur + 0.1);
+      o.frequency.exponentialRampToValueAtTime(24, at(t + dur));
+      const e = envGain(t, 0.01, g, dur);
+      o.connect(e); out(e, 0.05);
+    }
+    // Reverse swell: rises out of nothing and stops dead on t1 (the cut).
+    function reverseSwell(t1, dur, g) {
+      const t = t1 - dur;
+      if (!live(t)) return;
+      const s = noiseSrc(t, dur), hp = filt('highpass', 600), bp = filt('bandpass', 700, 0.8), e = ac.createGain();
+      bp.frequency.setValueAtTime(700, at(t));
+      bp.frequency.exponentialRampToValueAtTime(7500, at(t1));
+      e.gain.setValueAtTime(0.0001, at(t));
+      e.gain.exponentialRampToValueAtTime(g, at(t1 - 0.006));
+      e.gain.setValueAtTime(0.0001, at(t1));
+      s.connect(hp); hp.connect(bp); bp.connect(e); out(e, 0.25);
+    }
+    // Electric arc: a 100 Hz buzz, distorted and stuttering like a Jacob's ladder.
+    function arc(t, dur, g, pan = 0) {
+      if (!live(t)) return;
+      const ws = ac.createWaveShaper(); ws.curve = shaper;
+      const bp = filt('bandpass', 1600, 0.8), e = ac.createGain();
+      [100, 150.5, 201].forEach((f) => { const o = osc('sawtooth', f, t, dur + 0.05); o.connect(ws); });
+      const n = noiseSrc(t, dur), ng = ac.createGain(); ng.gain.value = 0.6; n.connect(ng); ng.connect(ws);
+      e.gain.setValueAtTime(0.0001, at(t));
+      for (let x = 0; x < dur; x += 0.018) e.gain.setValueAtTime(g * (0.25 + 0.75 * rand()) * (rand() > 0.15 ? 1 : 0.1), at(t + x));
+      e.gain.setValueAtTime(g * 0.3, at(t + dur - 0.02));
+      e.gain.exponentialRampToValueAtTime(0.0001, at(t + dur));
+      ws.connect(bp); bp.connect(e); out(e, 0.3, sfx, pan);
+      crackle(t, Math.ceil(dur * 40), g * 0.8, dur);
+    }
+    // Charge-up whine ending on t1.
+    function chargeUp(t1, dur, g) {
+      const t = t1 - dur;
+      if (!live(t)) return;
+      const o = osc('sawtooth', 180, t, dur), lp = filt('lowpass', 2500, 4), e = ac.createGain();
+      o.frequency.exponentialRampToValueAtTime(1800, at(t1));
+      e.gain.setValueAtTime(0.0001, at(t));
+      e.gain.exponentialRampToValueAtTime(g, at(t1 - 0.01));
+      e.gain.setValueAtTime(0.0001, at(t1));
+      o.connect(lp); lp.connect(e); out(e, 0.3);
+    }
+    // Pass-by: a whoosh that pans across with a doppler pitch drop.
+    function passby(t, dur, g, dir = 1) {
+      if (!live(t)) return;
+      whoosh(t, dur, 900, 280, g, -0.9 * dir, 0.9 * dir);
+      const o = osc('triangle', 520, t, dur), e = envGain(t, dur * 0.5, g * 0.25, dur * 0.5);
+      o.frequency.setValueAtTime(560, at(t));
+      o.frequency.exponentialRampToValueAtTime(230, at(t + dur));
+      o.connect(e); out(e, 0.2, sfx, 0.5 * dir);
+    }
+    // Distant thunder roll.
+    function thunder(t, g, dur = 2.8) {
+      if (!live(t)) return;
+      const s = noiseSrc(t, dur), lp = filt('lowpass', 260, 0.7), e = ac.createGain();
+      e.gain.setValueAtTime(0.0001, at(t));
+      e.gain.exponentialRampToValueAtTime(g, at(t + 0.25));
+      e.gain.exponentialRampToValueAtTime(g * 0.4, at(t + 0.9));
+      e.gain.exponentialRampToValueAtTime(g * 0.7, at(t + 1.3));
+      e.gain.exponentialRampToValueAtTime(0.0001, at(t + dur));
+      s.connect(lp); lp.connect(e); out(e, 0.5);
+    }
+    // The layered cinematic impact used on every cut.
+    function impact(t, size, g, pan = 0) {
+      boom(t, size, g * 0.7);
+      subDrop(t, g * 0.55, 1.4 * size);
+      metalHit(t, g * 0.32, pan);
+      if (live(t)) {
+        const s = noiseSrc(t, 0.5), f = filt('lowpass', 5000), e = envGain(t, 0.001, g * 0.4, 0.35 * size);
+        s.connect(f); f.connect(e); out(e, 0.7);
+      }
+      crackle(t, Math.round(10 * size), g * 0.3, 0.35 * size);
     }
 
     // =====================================================================
@@ -493,7 +592,7 @@
     bassBar(24.5, 0.11, 2, 1300, true);
     arpBar(23.0, 0.045);
     hats(23.0, 0.07, 4, 4);
-    riser(23.0, 2.95, 0.2, 200, 6500);
+    riser(23.0, 2.74, 0.2, 200, 6500);
     for (let i = 0; i < 6; i++) whoosh(23.1 + i * 0.45, 0.45, 600, 3000, 0.07, i % 2 ? 0.8 : -0.8, 0);
     crackle(25.3, 18, 0.22, 0.6);
 
@@ -506,6 +605,57 @@
     AD.TAGLINE.forEach(([T], i) => { bell(T - 0.2, [86, 81, 78][i], 0.07); taiko(T - 0.2, 0.12); });
     bell(29.125, 74, 0.05);
 
+    // =====================================================================
+    // dramatic sound design layer — every cut is a hit, every hit is announced
+    // =====================================================================
+    // swells that slam shut on the cuts
+    for (const [c, g] of [[2, 0.16], [5, 0.12], [8, 0.13], [11, 0.14], [14, 0.18], [17, 0.12], [20, 0.16], [23, 0.12]]) reverseSwell(c, 0.7, g);
+    // impacts on the cuts and on the key words
+    for (const [c, size, g, pan] of [
+      [2.0, 0.8, 0.6, 0], [5.0, 0.7, 0.5, -0.3], [8.0, 0.8, 0.55, 0.3], [11.0, 0.9, 0.6, 0],
+      [14.0, 1.2, 0.7, 0], [17.0, 0.6, 0.45, 0], [18.5, 1.4, 0.85, 0],
+      [20.0, 1.0, 0.7, -0.25], [21.125, 1.0, 0.7, 0.25], [22.25, 1.1, 0.75, 0], [23.0, 0.7, 0.5, 0],
+    ]) impact(c, size, g, pan);
+
+    // panel 1: the spark and the ignition really crack
+    arc(0.12, 0.09, 0.14);
+    arc(0.36, 0.06, 0.12);
+    metalHit(0.57, 0.12);
+    arc(0.57, 0.5, 0.11, -0.3);
+    chargeUp(2.0, 1.2, 0.05);
+    // panel 2: the camera rips through the trays
+    for (let i = 0; i < 4; i++) passby(beat(2, i) + 0.05, 0.6, 0.12, i % 2 ? -1 : 1);
+    // panel 3: every breaker lands with metal and a spit of current
+    AD.BREAKERS_AT.forEach((b, i) => { metalHit(b, i < 3 ? 0.16 : 0.1, (i - 3.5) / 5); arc(b + 0.01, 0.07, 0.07, (i - 3.5) / 5); });
+    // panel 4: servers spin up
+    chargeUp(9.5, 1.4, 0.03);
+    // panel 5: floors thump on as they light
+    for (let k = 0; k < AD.FLOORS; k += 2) subDrop(AD.floorAt(k), 0.05, 0.25);
+    metalHit(AD.floorAt(AD.FLOORS - 1) + 0.1, 0.12);
+    // panel 6: "יש חשמל..." — dark, distant, dangerous
+    thunder(14.05, 0.16, 2.9);
+    arc(15.1, 0.35, 0.05, -0.6);
+    arc(16.2, 0.25, 0.05, 0.6);
+    // panel 7: the charger draws power, then everything goes
+    chargeUp(18.3, 0.8, 0.08);
+    arc(18.5, 0.45, 0.12);
+    thunder(18.55, 0.12, 2.0);
+    // panel 8: power lines arc on every word
+    arc(20.0, 0.3, 0.1, -0.5); arc(21.125, 0.3, 0.1, 0.5); arc(22.25, 0.35, 0.11, 0);
+    // panel 9: streams fly past from every side, then the suck-in
+    for (let i = 0; i < 5; i++) passby(23.2 + i * 0.5, 0.55, 0.09 + i * 0.015, i % 2 ? 1 : -1);
+    reverseSwell(25.75, 1.4, 0.22);
+    chargeUp(25.75, 1.6, 0.07);
+    // panel 10: the flash — the biggest hit of the ad
+    impact(26.0, 1.9, 1.0);
+    thunder(26.05, 0.18, 3.5);
+    arc(26.0, 0.6, 0.1);
+    metalHit(26.02, 0.3);
+    // spark crossing the logo, tagline hits
+    arc(AD.LOGO_SPARK - 0.2, 0.55, 0.06, -0.4);
+    AD.TAGLINE.forEach(([T], i) => { metalHit(T - 0.2, 0.07, (i - 1) * 0.4); subDrop(T - 0.2, 0.12, 0.6); });
+    subDrop(29.125, 0.15, 0.9);
+
     // lead melody
     for (const [t, m, beats] of MELODY) lead(t, m, beats * B, t < 14 ? 0.035 : 0.05);
 
@@ -516,13 +666,16 @@
       const hp = filt('highpass', 90);
       hp.connect(voiceBus);
       const vw = ac.createGain(); vw.gain.value = 0.08; hp.connect(vw); vw.connect(rev);
-      for (const [s0, s1, place] of AD.VO) {
+      for (const [s0, s1, place, , gain = 1] of AD.VO) {
         const dur = s1 - s0;
         if (place + dur < from) continue;
         const skip = Math.max(0, from - place);
         const src = ac.createBufferSource();
         src.buffer = AD.voice;
-        src.connect(hp);
+        const pg = ac.createGain();
+        pg.gain.value = gain;
+        src.connect(pg);
+        pg.connect(hp);
         src.start(at(place + skip), s0 + skip, dur - skip);
       }
     }
