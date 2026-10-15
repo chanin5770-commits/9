@@ -65,7 +65,7 @@ function serve() {
       '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
       '-ss', String(from), '-t', String(to - from), '-i', SONG,
       '-map', '0:v', '-map', '1:a',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '21', '-pix_fmt', 'yuv420p', '-tune', 'film',
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '24', '-pix_fmt', 'yuv420p', '-tune', 'film',
       '-c:a', 'aac', '-b:a', '256k',
       '-shortest', '-movflags', '+faststart', OUT,
     ], { stdio: ['pipe', 'inherit', 'inherit'] });
