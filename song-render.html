@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Song video render</title>
+<link rel="stylesheet" href="src/fonts.css">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="assets/song/analysis.js"></script>
+<script src="src/song.js"></script>
+<script>
+  // Hooks driven by tools/render-song.cjs
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  window.__ready = SONG.load('');
+  window.__dur = () => SONG.DUR;
+  window.__frame = (t, type = 'image/jpeg', q = 0.93) => { SONG.render(ctx, t); return cv.toDataURL(type, q); };
+</script>
+</body>
+</html>
