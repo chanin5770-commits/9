@@ -2,8 +2,8 @@
  *
  * Everything is a pure function of time t (seconds), so frames render
  * deterministically and stay in sync with the track. Audio features come from
- * assets/song/analysis.js (tools/analyze-song.py). Palette follows the cover:
- * black and white, with the cover's yellow-gold as the only colour.
+ * assets/song/analysis.js (tools/analyze-song.py). No people: a procedural
+ * sunrise over mountain ranges, black and gold like the cover.
  */
 (function () {
   'use strict';
@@ -59,39 +59,6 @@
     return e;
   };
   // hits: section starts that get a flash + punch
-  const HITS = [32.5, 52.5, 72.5, 100, 122.5];
-
-  // ---------- framings of the cover (source px, image is 1200x1200; title text sits below y≈700) ----------
-  const F = {
-    WIDE: { x: 600, y: 338, w: 1200 },
-    FACE: { x: 650, y: 400, w: 780 },
-    EYES: { x: 610, y: 440, w: 520 },
-    HAIR: { x: 640, y: 300, w: 700 },
-    ARM: { x: 330, y: 330, w: 640 },
-    CHEST: { x: 780, y: 470, w: 700 },
-    PROFILE: { x: 680, y: 430, w: 620 },
-  };
-  const P = (f, dx = 0, dy = 0, k = 1) => ({ x: f.x + dx, y: f.y + dy, w: f.w * k });
-
-  // [start, end, from, to, flip]
-  const SHOTS = [];
-  const shot = (a, b, from, to, flip = false) => SHOTS.push([a, b, from, to, flip]);
-  shot(0, 12.5, F.WIDE, P(F.FACE, 0, -20, 1.15));
-  shot(12.5, 22.5, P(F.FACE, -40, 0), P(F.FACE, 30, 10, 0.88));
-  shot(22.5, 32.5, P(F.EYES, -30, -10, 1.15), P(F.EYES, 20, 10, 0.95));
-  // build: every two bars, slowly tightening
-  [[F.ARM, P(F.ARM, 40, 0, 0.85)], [P(F.HAIR, -40), P(F.HAIR, 40, 0, 0.9)], [F.PROFILE, P(F.PROFILE, 0, 0, 0.8)], [P(F.FACE, 0, 0, 0.9), P(F.EYES, 0, 0, 1.1)]]
-    .forEach(([a, b], i) => shot(32.5 + i * 5, 37.5 + i * 5, a, b, i % 2 === 1));
-  // chorus 1: a cut on every bar
-  [F.FACE, F.CHEST, F.EYES, F.WIDE].forEach((f, i) => shot(52.5 + i * BAR, 52.5 + (i + 1) * BAR, P(f, 0, 0, 1.08), P(f, 0, 0, 0.94), i % 2 === 1));
-  shot(62.5, 72.5, P(F.WIDE, 0, 0, 1), P(F.PROFILE, 0, -20, 1.3));
-  // big choruses: cut every two bars, cycling framings and mirroring
-  const CYCLE = [F.FACE, F.ARM, F.EYES, F.WIDE, F.CHEST, F.HAIR, F.PROFILE];
-  for (let t = 72.5, i = 0; t < 132.5 - 0.01; t += 2 * BAR, i++) {
-    const f = CYCLE[i % CYCLE.length];
-    shot(t, Math.min(t + 2 * BAR, 132.5), P(f, -30, 0, 1.1), P(f, 30, 0, 0.92), i % 3 === 1);
-  }
-  shot(132.5, 156, P(F.EYES, 0, 0, 1.2), F.WIDE);
 
   // ---------- text ----------
   // style: line (words reveal one by one; *word* is gold), punch (one huge word on the downbeat),
@@ -129,19 +96,32 @@
     { a: 151.4, b: 156, s: 'end' },
   ];
 
-  // ---------- assets ----------
-  let cover = null, grain = [], dust = [], embers = [];
-  SONG.load = async (base = '') => {
-    const img = new Image();
-    img.src = base + 'assets/song/cover.jpg';
-    await img.decode();
-    // pre-grade once: a touch more contrast, deeper blacks
-    cover = document.createElement('canvas');
-    cover.width = img.width; cover.height = img.height;
-    const c = cover.getContext('2d');
-    c.filter = 'grayscale(1) contrast(1.12) brightness(1.32)';
-    c.drawImage(img, 0, 0);
+  // ---------- the world: no people, only light and landscape ----------
+  // The song is a sunrise: dark mountains under stars, the sun breaking the
+  // horizon in the build, and full golden light in the last choruses.
+  const hash = (i, s) => { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); };
+  const noise1 = (x, s) => { const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f); return lerp(hash(i, s), hash(i + 1, s), u); };
+  const ridge = (x, s) => { let v = 0, a = 0.5, q = 1; for (let o = 0; o < 5; o++) { v += a * (1 - Math.abs(noise1(x * q, s + o * 7) * 2 - 1)); a *= 0.5; q *= 2.1; } return v; };
+  const keys = (pts) => (t) => {
+    if (t <= pts[0][0]) return pts[0][1];
+    for (let i = 1; i < pts.length; i++) if (t < pts[i][0]) return lerp(pts[i - 1][1], pts[i][1], smooth((t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0])));
+    return pts[pts.length - 1][1];
+  };
+  // how far the sun has risen (0 = below the horizon, 1 = high)
+  const rise = keys([[0, -0.15], [30, 0], [52.5, 0.28], [62.5, 0.34], [72.5, 0.42], [100, 0.7], [132.5, 0.86], [151, 1]]);
+  // camera: horizon height (fraction of H) and zoom toward the sun
+  const horizon = keys([[0, 0.66], [32.5, 0.7], [52.5, 0.76], [62.5, 0.72], [72.5, 0.78], [132.5, 0.8], [156, 0.74]]);
+  const zoom = keys([[0, 1.0], [32.5, 1.1], [52.5, 1.0], [62.5, 1.06], [72.5, 1.0], [100, 1.12], [100.01, 1.0], [132.5, 1.1], [156, 1.18]]);
+  const LAYERS = [ // far -> near
+    { s: 3, sc: 0.0012, amp: 0.2, off: 0.0, par: 0.25, col: [26, 22, 14], rim: 0.9 },
+    { s: 11, sc: 0.0017, amp: 0.3, off: 0.05, par: 0.5, col: [14, 12, 8], rim: 0.6 },
+    { s: 19, sc: 0.0022, amp: 0.36, off: 0.13, par: 0.85, col: [7, 6, 4], rim: 0.4 },
+    { s: 29, sc: 0.003, amp: 0.42, off: 0.24, par: 1.4, col: [0, 0, 0], rim: 0.25 },
+  ];
+  const HITS = [32.5, 52.5, 72.5, 100, 122.5];
 
+  let grain = [], dust = [], embers = [], stars = [], streaks = [];
+  SONG.load = async () => {
     const r = rng(7);
     for (let i = 0; i < 6; i++) {
       const g = document.createElement('canvas'); g.width = 480; g.height = 270;
@@ -150,87 +130,183 @@
       gc.putImageData(id, 0, 0); grain.push(g);
     }
     for (let i = 0; i < 70; i++) dust.push({ x: r(), y: r(), z: 0.3 + r() * 0.7, ph: r() * 6.28, sp: 0.004 + r() * 0.012 });
-    for (let i = 0; i < 90; i++) embers.push({ x: r(), off: r(), sp: 0.12 + r() * 0.25, sw: r() * 6.28, z: 0.4 + r() * 0.6 });
+    for (let i = 0; i < 110; i++) embers.push({ x: r(), off: r(), sp: 0.12 + r() * 0.25, sw: r() * 6.28, z: 0.4 + r() * 0.6 });
+    for (let i = 0; i < 220; i++) stars.push({ x: r(), y: r() * 0.7, m: r() * r(), ph: r() * 6.28 });
+    for (let i = 0; i < 90; i++) streaks.push({ a: r() * Math.PI * 2, off: r(), sp: 0.6 + r() * 0.9, w: 0.5 + r() * 2 });
     await Promise.all([document.fonts.load('800 100px Heebo', 'אור'), document.fonts.load('500 60px Heebo', 'אור')]);
   };
 
-  // ---------- layers ----------
-  function drawShot(ctx, t, s, alpha, punch) {
-    const [a, b, from, to, flip] = s;
-    const k = smooth((t - a) / (b - a));
-    let w = lerp(from.w, to.w, k) / punch;
-    w = Math.min(w, 1200);
-    const h = (w * H) / W;
-    const x = clamp(lerp(from.x, to.x, k), w / 2, 1200 - w / 2);
-    const y = clamp(lerp(from.y, to.y, k), h / 2, 700 - h / 2);
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    if (flip) { ctx.translate(W, 0); ctx.scale(-1, 1); }
-    ctx.drawImage(cover, x - w / 2, y - h / 2, w, h, 0, 0, W, H);
-    ctx.restore();
-  }
+  function drawWorld(ctx, t, e, f) {
+    const hy = horizon(t) * H, R = rise(t);
+    const sunX = W / 2, sunY = hy + 70 - R * H * 0.3;
+    const light = clamp(0.15 + R) * smooth((t - 0.3) / 4); // overall daylight
+    const pulse = e >= 2 ? beatPulse(t) * (0.4 + f.bass) : f.bass * 0.4;
 
-  function drawBackground(ctx, t, e, f) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
-    const punch = 1 + (e >= 2 ? 0.035 * beatPulse(t) * (0.5 + f.bass) : 0) + 0.02 * hitFlash(t);
-    let cur = SHOTS.findIndex(([a, b]) => t >= a && t < b);
-    if (cur < 0) cur = SHOTS.length - 1;
-    const s = SHOTS[cur];
-    // soft crossfades in calm parts, hard cuts once the song is driving
-    const xf = e < 1.5 ? 0.9 : 0.12;
-    const prev = SHOTS[cur - 1];
-    if (prev && t - s[0] < xf && prev[1] === s[0]) {
-      drawShot(ctx, t, prev, 1, punch);
-      drawShot(ctx, t, s, smooth((t - s[0]) / xf), punch);
-    } else drawShot(ctx, t, s, 1, punch);
-
-    // exposure: fade up from black, dim for text-only end card
-    const fadeIn = smooth((t - 0.2) / 3.2);
-    const fadeOut = 1 - 0.75 * smooth((t - 150.5) / 1.6);
-    const breathe = 0.9 + 0.1 * f.rms + 0.05 * e;
-    const dark = 1 - clamp(fadeIn * fadeOut * breathe, 0, 1);
-    if (dark > 0) { ctx.fillStyle = `rgba(0,0,0,${dark})`; ctx.fillRect(0, 0, W, H); }
-
-    // gold grade: grows with energy, in the highlights only
     ctx.save();
-    ctx.globalCompositeOperation = 'soft-light';
-    ctx.fillStyle = `rgba(242,212,44,${0.10 + 0.16 * (e / 3) + 0.10 * f.bass * (e / 3)})`;
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-  }
+    // camera: zoom toward the sun, a punch on the beat in the choruses
+    const z = zoom(t) * (1 + (e >= 2 ? 0.022 * pulse : 0) + 0.03 * hitFlash(t));
+    ctx.translate(sunX, hy); ctx.scale(z, z); ctx.translate(-sunX, -hy);
 
-  function drawLight(ctx, t, e, f) {
-    // light from the top-left, like the studio light on the cover, pulsing with the bass
-    const I = (0.18 + 0.22 * (e / 3) + 0.35 * f.bass * (0.3 + e / 3)) * smooth(t / 3);
-    ctx.save();
+    // sky
+    const sky = ctx.createLinearGradient(0, -200, 0, hy + 40);
+    sky.addColorStop(0, `rgb(${2 + 10 * light | 0},${2 + 8 * light | 0},${4 + 3 * light | 0})`);
+    sky.addColorStop(0.6, `rgb(${10 + 60 * light | 0},${8 + 42 * light | 0},${8 + 10 * light | 0})`);
+    sky.addColorStop(1, `rgb(${30 + 190 * light | 0},${22 + 140 * light | 0},${8 + 30 * light | 0})`);
+    ctx.fillStyle = sky;
+    ctx.fillRect(-200, -200, W + 400, hy + 400);
+
+    // stars fade as the sun comes up
+    const starVis = clamp(1 - R * 2.2) * smooth((t - 0.5) / 3);
+    if (starVis > 0) {
+      for (const s of stars) {
+        const a = starVis * (0.25 + 0.75 * s.m) * (0.6 + 0.4 * Math.sin(t * 2 + s.ph));
+        ctx.fillStyle = `rgba(255,248,225,${a})`;
+        const sz = 1 + 2.2 * s.m;
+        ctx.fillRect(s.x * W - t * 3 * s.m, s.y * hy, sz, sz);
+      }
+    }
+
     ctx.globalCompositeOperation = 'screen';
-    const g = ctx.createRadialGradient(-100, -150, 0, -100, -150, 1500);
-    g.addColorStop(0, `rgba(255,236,150,${0.55 * I})`);
-    g.addColorStop(0.35, `rgba(242,212,44,${0.18 * I})`);
+    // sun glow
+    const gr = 700 + 500 * light + 200 * pulse;
+    const g = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, gr);
+    g.addColorStop(0, `rgba(255,240,190,${0.9 * light})`);
+    g.addColorStop(0.12, `rgba(255,214,90,${0.55 * light})`);
+    g.addColorStop(0.4, `rgba(242,180,40,${0.18 * light})`);
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-    // god rays
-    const rays = 7;
+    ctx.fillRect(sunX - gr, sunY - gr, gr * 2, gr * 2);
+    // rays
+    const rays = 18, rI = light * (0.35 + 0.35 * (e / 3) + 0.5 * pulse);
     for (let i = 0; i < rays; i++) {
-      const ang = 0.35 + i * 0.13 + 0.04 * Math.sin(t * 0.21 + i * 1.7);
-      const len = 2400, spread = 0.025 + 0.02 * Math.sin(t * 0.33 + i);
-      const a = (0.05 + 0.05 * Math.sin(t * 0.5 + i * 2.1)) * I * (1 + f.high);
-      const rg = ctx.createLinearGradient(-100, -150, -100 + Math.cos(ang) * len, -150 + Math.sin(ang) * len);
-      rg.addColorStop(0, `rgba(255,240,180,${a})`);
-      rg.addColorStop(1, 'rgba(255,240,180,0)');
+      const ang = (i / rays) * Math.PI * 2 + t * 0.03 + 0.15 * Math.sin(i * 3.1);
+      const len = 1900, sp = 0.035 + 0.025 * Math.sin(t * 0.4 + i * 1.3);
+      const a = rI * (0.07 + 0.06 * Math.sin(t * 0.7 + i * 2.3));
+      const rg = ctx.createRadialGradient(sunX, sunY, 60, sunX, sunY, len);
+      rg.addColorStop(0, `rgba(255,232,150,${a})`);
+      rg.addColorStop(1, 'rgba(255,232,150,0)');
       ctx.fillStyle = rg;
       ctx.beginPath();
-      ctx.moveTo(-100, -150);
-      ctx.lineTo(-100 + Math.cos(ang - spread) * len, -150 + Math.sin(ang - spread) * len);
-      ctx.lineTo(-100 + Math.cos(ang + spread) * len, -150 + Math.sin(ang + spread) * len);
+      ctx.moveTo(sunX, sunY);
+      ctx.arc(sunX, sunY, len, ang - sp, ang + sp);
       ctx.closePath();
       ctx.fill();
     }
+    // the sun disc
+    const sr = 70 + 25 * light + 10 * pulse;
+    const core = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sr * 1.6);
+    core.addColorStop(0, `rgba(255,255,245,${light})`);
+    core.addColorStop(0.55, `rgba(255,236,150,${light})`);
+    core.addColorStop(1, 'rgba(255,200,60,0)');
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(sunX, sunY, sr * 1.6, 0, Math.PI * 2); ctx.fill();
+
+    // shockwave rings: one on every bar in the choruses, a big one on each hit
+    const rings = [];
+    if (e >= 1.8) {
+      const bar = Math.floor((t - D.beat0) / BAR);
+      for (let k = 0; k < 3; k++) rings.push([D.beat0 + (bar - k) * BAR, 0.5]);
+    }
+    for (const h of HITS) rings.push([h, 1]);
+    for (const [r0, s] of rings) {
+      const age = t - r0;
+      if (age < 0 || age > 2.2) continue;
+      const rad = 60 + age * (700 + 500 * s);
+      ctx.strokeStyle = `rgba(255,222,110,${(1 - age / 2.2) * 0.55 * s})`;
+      ctx.lineWidth = 3 + 10 * s * (1 - age / 2.2);
+      ctx.beginPath();
+      ctx.ellipse(sunX, sunY, rad, rad * 0.32, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // warp streaks out of the sun at the peak
+    const warp = clamp((e - 2.4) / 0.6);
+    if (warp > 0) {
+      ctx.lineCap = 'round';
+      for (const s of streaks) {
+        const life = (t * s.sp + s.off) % 1;
+        const d0 = 120 + life * life * 1600, d1 = d0 + 40 + 260 * life * (0.6 + f.bass);
+        ctx.strokeStyle = `rgba(255,236,170,${warp * Math.sin(life * Math.PI) * 0.5})`;
+        ctx.lineWidth = s.w * (0.5 + life * 2);
+        ctx.beginPath();
+        ctx.moveTo(sunX + Math.cos(s.a) * d0, sunY + Math.sin(s.a) * d0 * 0.6);
+        ctx.lineTo(sunX + Math.cos(s.a) * d1, sunY + Math.sin(s.a) * d1 * 0.6);
+        ctx.stroke();
+      }
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // mountains, far to near, with a gold rim where the light catches the ridge
+    const step = 8;
+    LAYERS.forEach((L, li) => {
+      const scroll = t * 22 * L.par;
+      const base = hy + L.off * H;
+      const ys = [];
+      for (let x = -240; x <= W + 240; x += step) ys.push(base - L.amp * H * ridge((x + scroll) * L.sc, L.s) * (0.55 + 0.45 * noise1((x + scroll) * L.sc * 0.3, L.s + 50)));
+      // body: lit from behind, haze toward the far layers
+      const body = ctx.createLinearGradient(0, base - L.amp * H, 0, base + 200);
+      const k = light * (1 - li / LAYERS.length);
+      body.addColorStop(0, `rgb(${L.col[0] + 50 * k | 0},${L.col[1] + 36 * k | 0},${L.col[2] + 12 * k | 0})`);
+      body.addColorStop(1, `rgb(${L.col[0]},${L.col[1]},${L.col[2]})`);
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(-240, H + 300);
+      ys.forEach((y, i) => ctx.lineTo(-240 + i * step, y));
+      ctx.lineTo(W + 240, H + 300);
+      ctx.closePath();
+      ctx.fill();
+      // rim light, strongest near the sun
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const rim = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 1100);
+      rim.addColorStop(0, `rgba(255,220,110,${L.rim * light * (0.8 + 0.6 * pulse)})`);
+      rim.addColorStop(1, 'rgba(255,220,110,0)');
+      ctx.strokeStyle = rim;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ys.forEach((y, i) => (i ? ctx.lineTo(-240 + i * step, y) : ctx.moveTo(-240, y)));
+      ctx.stroke();
+      ctx.restore();
+      // mist between the ranges
+      if (li < LAYERS.length - 1) {
+        const m = ctx.createLinearGradient(0, base - 60, 0, base + 90);
+        m.addColorStop(0, 'rgba(0,0,0,0)');
+        m.addColorStop(0.6, `rgba(${120 + 100 * light | 0},${100 + 70 * light | 0},${60 + 20 * light | 0},${0.1 + 0.12 * light})`);
+        m.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = m;
+        ctx.fillRect(-240, base - 60, W + 480, 150);
+      }
+    });
+
+    // pillars of light rising from the ranges through the build
+    const pil = clamp((t - 32.5) / 20) * (1 - smooth((t - 52.5) / 1.5)) + (e > 2.5 ? 0.6 : 0) * (1 - smooth((t - 130) / 2));
+    if (pil > 0) {
+      ctx.globalCompositeOperation = 'screen';
+      const n = 9;
+      for (let i = 0; i < n * clamp(pil * 1.2); i++) {
+        const px = W * (0.08 + 0.84 * hash(i, 91));
+        const on = Math.sin(t * 0.8 + i * 1.9) * 0.5 + 0.5;
+        const a = pil * (0.12 + 0.18 * on) * (0.6 + 0.6 * pulse);
+        const pg = ctx.createLinearGradient(0, hy + 60, 0, -200);
+        pg.addColorStop(0, `rgba(255,226,130,${a})`);
+        pg.addColorStop(1, 'rgba(255,226,130,0)');
+        ctx.fillStyle = pg;
+        const pw = 10 + 26 * hash(i, 17);
+        ctx.fillRect(px - pw / 2, -200, pw, hy + 260);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
     ctx.restore();
+
+    // fade in from black at the start and down for the end card
+    const dark = 1 - smooth((t - 0.2) / 3.5) * (1 - 0.7 * smooth((t - 150.5) / 1.8));
+    if (dark > 0) { ctx.fillStyle = `rgba(0,0,0,${dark})`; ctx.fillRect(0, 0, W, H); }
   }
 
+
+  // ---------- overlays ----------
   function drawParticles(ctx, t, e, f) {
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
@@ -296,7 +372,7 @@
     if (fl > 0.01) {
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
-      ctx.fillStyle = `rgba(255,244,200,${0.75 * fl})`;
+      ctx.fillStyle = `rgba(255,244,200,${0.5 * fl})`;
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
     }
@@ -319,6 +395,7 @@
   }
 
   // ---------- typography ----------
+  const BIG_Y = H * 0.4; // big words sit above the sun
   const font = (wgt, px) => `${wgt} ${px}px Heebo, sans-serif`;
 
   function words(txt) {
@@ -411,17 +488,17 @@
     const px = it.txt.length > 6 ? 230 : 280;
     // dark band behind for legibility
     ctx.save();
-    const band = ctx.createLinearGradient(0, H / 2 - 260, 0, H / 2 + 260);
+    const band = ctx.createLinearGradient(0, BIG_Y - 260, 0, BIG_Y + 260);
     band.addColorStop(0, 'rgba(0,0,0,0)');
     band.addColorStop(0.5, `rgba(0,0,0,${0.45 * smooth(k) * out})`);
     band.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = band;
-    ctx.fillRect(0, H / 2 - 260, W, 520);
+    ctx.fillRect(0, BIG_Y - 260, W, 520);
     ctx.restore();
     // echo trail on the hit
     const echo = Math.exp(-(t - it.a) * 4);
-    if (echo > 0.02) drawBig(ctx, it.txt, W / 2, H / 2, px * (1 + 0.18 * (1 - echo)), 1, 0.22 * echo, t);
-    drawBig(ctx, it.txt, W / 2, H / 2, px, k, smooth(k * 2) * out, t);
+    if (echo > 0.02) drawBig(ctx, it.txt, W / 2, BIG_Y, px * (1 + 0.18 * (1 - echo)), 1, 0.22 * echo, t);
+    drawBig(ctx, it.txt, W / 2, BIG_Y, px, k, smooth(k * 2) * out, t);
   }
 
   function drawTriad(ctx, t, it) {
@@ -436,7 +513,7 @@
     parts.forEach((p, i) => {
       const at = it.a + i * 2 * BEAT; // one word every two beats, on the beat
       const k = (t - at) / 0.4;
-      if (k > 0) drawBig(ctx, p, x - ws[i] / 2, H / 2, 150, k, smooth(k * 2) * out, t);
+      if (k > 0) drawBig(ctx, p, x - ws[i] / 2, BIG_Y, 150, k, smooth(k * 2) * out, t);
       x -= ws[i] + gap;
     });
   }
@@ -485,8 +562,7 @@
   SONG.render = (ctx, t) => {
     const e = energyAt(t), f = feat(t);
     ctx.save();
-    drawBackground(ctx, t, e, f);
-    drawLight(ctx, t, e, f);
+    drawWorld(ctx, t, e, f);
     drawParticles(ctx, t, e, f);
     drawFinish(ctx, t, e, f);
     drawWave(ctx, t, e);

@@ -14,7 +14,7 @@
   // Hooks driven by tools/render-song.cjs
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
-  window.__ready = SONG.load('');
+  window.__ready = SONG.load();
   window.__dur = () => SONG.DUR;
   window.__frame = (t, type = 'image/jpeg', q = 0.93) => { SONG.render(ctx, t); return cv.toDataURL(type, q); };
 </script>
