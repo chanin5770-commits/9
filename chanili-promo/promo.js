@@ -86,7 +86,7 @@
     }
     ctx.restore();
   }
-  let grainCanvas = null;
+  let grainCanvas = null, sweepCanvas = null;
   function grain(t) {
     if (!grainCanvas) { grainCanvas = document.createElement('canvas'); grainCanvas.width = grainCanvas.height = 256; const g = grainCanvas.getContext('2d'); const d = g.createImageData(256, 256); let s = 9; for (let i = 0; i < d.data.length; i += 4) { s = (s * 1664525 + 1013904223) >>> 0; const v = s >>> 24; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } g.putImageData(d, 0, 0); }
     const f = Math.floor(t * 30); ctx.save(); ctx.globalAlpha = 0.045; ctx.globalCompositeOperation = 'overlay';
@@ -200,10 +200,10 @@
       text(P.tourTitle, x, H * 0.4, ts, { weight: 800, reveal: seg(t, T_TOUR + 0.2, T_TOUR + 0.9) });
       text(P.tourSub, x, H * 0.4 + ts * 1.1, fitSize(P.tourSub, 38 * S, W * 0.5, 500), { weight: 500, color: C.rose1, reveal: seg(t, T_TOUR + 0.6, T_TOUR + 1.3) });
     }
-    const night = f >= P.tour.nightFrom; const nk = night ? seg(t, T_TOUR + 0.4 + (P.tour.nightFrom / P.tour.frames) * (T_COLLAGE - T_TOUR - 0.6), 99) : 0;
+    const night = f >= P.tour.nightFrom; const tn = T_TOUR + 0.4 + (P.tour.nightFrom / P.tour.frames) * (T_COLLAGE - T_TOUR - 0.6);
     const px = V ? W / 2 : W * 0.68, py = V ? H * 0.255 : H * 0.62;
     pill(night ? '☾  לילה' : '☀  יום', px, py, 34 * S, seg(t, T_TOUR + 1.0, T_TOUR + 1.4));
-    flash(0.35 * (1 - seg(nk, 0, 0.15)) * (night ? 1 : 0), '200,190,255');
+    flash(0.35 * (1 - seg(t, tn, tn + 0.45)) * (t >= tn ? 1 : 0), '200,190,255');
     flash(0.25 * (1 - seg(t, T_TOUR, T_TOUR + 0.35)));
   }
   function sceneCollage(t) {
@@ -239,9 +239,12 @@
     // light sweep across the logo
     const sw = seg(t, T_END + 0.9, T_END + 2.0);
     if (sw > 0 && sw < 1) {
-      ctx.save(); ctx.translate(W / 2, ly); ctx.beginPath(); ctx.rect(-lw / 2, -lh / 2, lw, lh); ctx.clip(); ctx.globalCompositeOperation = 'lighter';
-      const x = lerp(-lw, lw, sw); const g = ctx.createLinearGradient(x - 120 * S, 0, x + 120 * S, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,240,230,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = g; ctx.transform(1, 0, -0.35, 1, 0, 0); ctx.fillRect(-lw, -lh / 2, lw * 2, lh); ctx.restore();
+      // the shine only touches the logo's own pixels
+      const oc = sweepCanvas || (sweepCanvas = document.createElement('canvas')); oc.width = Math.ceil(lw); oc.height = Math.ceil(lh);
+      const o = oc.getContext('2d'); o.drawImage(logo, 0, 0, lw, lh); o.globalCompositeOperation = 'source-in';
+      const x = lerp(-lw * 0.3, lw * 1.3, sw); const g = o.createLinearGradient(x - 140 * S, 0, x + 140 * S, lh * 0.4); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,244,236,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      o.fillStyle = g; o.fillRect(0, 0, lw, lh);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(oc, W / 2 - lw / 2, ly - lh / 2); ctx.restore();
     }
     const by = ly + lh / 2 + (V ? 110 : 80) * S;
     text(P.brand.services, W / 2, by, fitSize(P.brand.services, 46 * S, W * 0.9, 600), { weight: 600, color: C.cream, reveal: seg(t, T_END + 0.8, T_END + 1.5) });
