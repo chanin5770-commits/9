@@ -56,6 +56,7 @@ node chanili-promo/tools/render.cjs --stills 2,5,19    # תמונות בודדו
 | קובץ | מה זה |
 |---|---|
 | `dist/chanili-cinematic-vertical-1080x1920.mp4` | הפרסומת, לאורך 9:16, עם כתוביות ופסקול |
+| `dist/chanili-cinematic-vertical-whatsapp.mp4` | אותה פרסומת, מכווצת ל־13MB לוואטסאפ |
 | `cinematic.html` | נגן בדפדפן עם סאונד |
 | `cinematic-config.js` | תמונות, נוסח, תזמון הקריינות, סלוגן וטלפון |
 
