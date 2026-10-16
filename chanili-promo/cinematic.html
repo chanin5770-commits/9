@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CHANILI Studio · פרסומת 40 שניות</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #07070a; color: #fbefe9; font-family: Heebo, Arial, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; box-sizing: border-box; }
+  canvas { max-width: 100%; max-height: calc(100vh - 90px); border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .bar { display: flex; gap: 10px; align-items: center; }
+  button { background: #eab09a; color: #140d11; border: 0; border-radius: 999px; padding: 9px 18px; font: 600 15px Heebo, Arial, sans-serif; cursor: pointer; }
+  #time { font-variant-numeric: tabular-nums; opacity: .7; min-width: 70px; text-align: center; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div class="bar"><button id="play" type="button">הפעלה עם סאונד</button><span id="time">0.0 / 40</span></div>
+<script src="../src/timeline.js"></script>
+<script src="../src/audio.js"></script>
+<script src="cinematic-config.js"></script>
+<script src="cinematic.js"></script>
+<script>
+(async () => {
+  const c = document.getElementById('c'), A = window.CINE_APP;
+  window.__dur = A.DUR;
+  window.__ready = A.load().then(() => true);
+  window.__size = (w, h) => { c.width = w; c.height = h; };
+  window.__frame = (t, type = 'image/jpeg', q = 0.95) => { A.draw(c, t); return c.toDataURL(type, q); };
+  window.__audio = async () => { const buf = await A.renderAudio(); let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+  await window.__ready;
+  A.draw(c, 8.5);
+  let ac = null, playing = false; const time = document.getElementById('time');
+  document.getElementById('play').onclick = () => {
+    if (ac) ac.close(); ac = new AudioContext(); const t0 = ac.currentTime + 0.1; A.buildAudio(ac, t0); playing = true;
+    const tick = () => { if (!playing) return; const t = Math.max(0, ac.currentTime - t0); if (t >= A.DUR) { playing = false; return; } A.draw(c, t); time.textContent = t.toFixed(1) + ' / ' + A.DUR; requestAnimationFrame(tick); };
+    tick();
+  };
+})();
+</script>
+</body>
+</html>
