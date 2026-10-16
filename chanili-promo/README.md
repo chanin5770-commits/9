@@ -6,6 +6,7 @@
 |---|---|
 | `dist/chanili-promo-vertical-1080x1920.mp4` | לאורך 9:16, לסטורי, ריילס, טיקטוק וסטטוס |
 | `dist/chanili-promo-horizontal-1920x1080.mp4` | לרוחב 16:9, ליוטיוב, לפייסבוק ולאתר |
+| `dist/chanili-promo-vertical-whatsapp.mp4` | לאורך, מכווץ ל־8MB, לשליחה בוואטסאפ |
 | `dist/chanili-promo.wav` | הפסקול לבד |
 
 ## מהלך הסרטון
