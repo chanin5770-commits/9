@@ -268,7 +268,7 @@
       o.fillStyle = g; o.fillRect(0, 0, lw, lh); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(oc, W / 2 - lw / 2, ly - lh / 2); ctx.restore();
     }
     const sl = P.slogan, ss = fit(sl, 92 * S, W * 0.9);
-    title(sl, W / 2, H * 0.53, ss, { grad: true, reveal: seg(t, 34.6, 35.4) });
+    title(sl, W / 2, H * 0.53, ss, { grad: true, reveal: seg(t, VO[12].t, VO[12].t + 0.8) });
     title(P.services, W / 2, H * 0.53 + ss * 1.15, fit(P.services, 44 * S, W * 0.9, 600), { weight: 600, reveal: seg(t, 35.3, 35.9) });
     title(P.phone, W / 2, H * 0.53 + ss * 1.15 + 120 * S, 124 * S, { reveal: seg(t, 35.8, 36.6), track: 2 * S });
     title(P.rights, W / 2, H * 0.955, 26 * S, { weight: 400, color: 'rgba(251,239,233,0.6)', reveal: seg(t, 36.8, 37.4) });
@@ -291,9 +291,9 @@
   const B = 0.5; // 120 BPM
   const CH = [[38, [50, 53, 57, 62]], [34, [46, 50, 53, 58]], [41, [53, 57, 60, 65]], [36, [48, 52, 55, 60]]]; // Dm Bb F C
   const chordAt = (t) => { if (t >= T.end) return [t, 38, [50, 54, 57, 62, 66]]; const c = CH[((Math.floor(t / 2) % 4) + 4) % 4]; return [t, c[0], c[1]]; };
-  function buildAudio(ac, startAt = 0) {
+  function buildAudio(ac, startAt = 0, stem = null) {
     const AD = global.AD;
-    const K = AD.createKit(ac, { startAt, dur: DUR, fadeAt: 38.4, gaps: [[5.82, 6.0], [28.82, 29.0], [32.84, 33.0]] });
+    const K = AD.createKit(ac, { startAt, dur: DUR, fadeAt: DUR - 0.7, gaps: [[5.82, 6.0], [28.82, 29.0], [32.84, 33.0]] });
     const { at, music, seq, narrate, out, osc, filt, whoosh, riser, boom, impact, braam, reverseSwell, subDrop, kick, snare, hat, taiko, bass, bell, tick, blip } = K;
     const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
     const sq = seq(B, chordAt);
@@ -313,7 +313,7 @@
     impact(6.0, 1.1, 0.7); braam(6.0, 38, 2.4, 0.12); bell(6.9, 74, 0.08); bell(7.3, 81, 0.07); bell(7.7, 86, 0.06);
     pad(6.0, 7.0, [50, 53, 57, 62], 0.016);
     for (let t = 8.0; t < 13; t += B) kick(t, t % 1 === 0 ? 0.3 : 0.16);
-    boom(10.3, 0.5, 0.3); braam(10.3, 34, 1.6, 0.07); riser(11.8, 1.2, 0.1); reverseSwell(13.0, 0.9, 0.22);
+    boom(10.25, 0.4, 0.16); braam(10.25, 34, 0.9, 0.035); riser(11.8, 1.2, 0.1); reverseSwell(13.0, 0.9, 0.22);
     // 13–21 drums, bass and arpeggio
     for (let bar = 13; bar < 21; bar += 2) {
       sq.bassBar(bar, 0.08, 4, 520); sq.arpBar(bar, 0.032); taiko(bar, 0.34);
@@ -326,16 +326,16 @@
     for (let bar = 21; bar < 29; bar += 2) { sq.arpBar(bar, 0.028); for (let n = 0; n < 4; n++) { if (n % 2 === 0) kick(bar + n * B, 0.3); hat(bar + n * B, 0.035); hat(bar + n * B + B / 2, 0.05); } pad(bar, 2, chordAt(bar)[2], 0.01); }
     P.ui.clicks.forEach((c, i) => { const t = T.ui + c / P.ui.fps; tick(t, 0.2, 2500); blip(t, 1400 + i * 300, 0.06, 0); });
     { const tn = T.ui + P.ui.clicks[2] / P.ui.fps; bell(tn, 86, 0.08); subDrop(tn, 0.15, 0.9); }
-    riser(27.6, 1.22, 0.15);
+    riser(28.05, 0.95, 0.08);
     // 29–33 montage: a hit on every cut
-    impact(T.montage, 1.0, 0.65); braam(T.montage, 38, 1.4, 0.11);
+    impact(T.montage, 0.6, 0.5); braam(T.montage, 38, 0.6, 0.07);
     const step = (T.end - T.montage) / P.montage.length;
-    for (let i = 1; i < P.montage.length; i++) { const t = T.montage + i * step; taiko(t, 0.3); kick(t, 0.35); whoosh(t - 0.12, 0.25, 800, 4000, 0.06); }
+    for (let i = 1; i < P.montage.length; i++) { const t = T.montage + i * step, under = t < VO[10].t + VO[10].dur; taiko(t, under ? 0.12 : 0.3); kick(t, under ? 0.14 : 0.35); whoosh(t - 0.12, 0.25, 800, 4000, under ? 0.025 : 0.06); }
     for (let i = 0; i < 8; i++) snare(32.0 + i * 0.1, 0.04 + i * 0.014); reverseSwell(33.0, 1.0, 0.3);
     // 33–40 the brand: final hit resolving to D major
-    impact(T.end, 1.3, 0.8); braam(T.end, 38, 2.6, 0.13); pad(T.end, 6.5, [50, 54, 57, 62, 66], 0.02, 1800);
-    [74, 78, 81, 86].forEach((m, i) => bell(34.6 + i * 0.22, m, 0.07)); bell(35.8, 90, 0.07); bell(36.0, 86, 0.05);
-    for (const m of [26, 38]) { const o = osc('sine', mtof(m), T.end, 6), e = ac.createGain(); e.gain.setValueAtTime(0.0001, at(T.end)); e.gain.linearRampToValueAtTime(0.12, at(T.end + 0.05)); e.gain.exponentialRampToValueAtTime(0.0001, at(DUR)); o.connect(e); out(e, 0.2, music); }
+    impact(T.end, 1.0, 0.7); braam(T.end, 38, 1.3, 0.1); pad(T.end, DUR - T.end, [50, 54, 57, 62, 66], 0.016, 1800);
+    [74, 78, 81, 86].forEach((m, i) => bell(VO[12].t + i * 0.22, m, 0.035)); bell(36.95, 90, 0.06); bell(37.1, 86, 0.04); [81, 86, 90].forEach((m, i) => bell(VO[14].t + VO[14].dur + 0.1 + i * 0.18, m, 0.06));
+    for (const m of [26, 38]) { const o = osc('sine', mtof(m), T.end, 6), e = ac.createGain(); e.gain.setValueAtTime(0.0001, at(T.end)); e.gain.linearRampToValueAtTime(0.07, at(T.end + 0.05)); e.gain.exponentialRampToValueAtTime(0.0001, at(DUR)); o.connect(e); out(e, 0.2, music); }
     // narration: lines laid end to end in one buffer, each placed at its start time
     const rec = VO.filter((v) => v.file);
     if (rec.length) {
@@ -343,9 +343,13 @@
       let off = 0; for (const v of rec) { const d = voice.getChannelData(0), src = v.file.getChannelData(0), n = Math.min(src.length, Math.round(v.file.duration * sr)); for (let i = 0; i < n; i++) d[Math.round(off * sr) + i] = src[Math.floor(i * v.file.sampleRate / sr)] || 0; list.push([off, off + v.file.duration, v.t]); off += v.file.duration + 0.1; }
       narrate(list, voice);
     }
+    K.voiceBus.gain.value = 2.2; // voice sits clearly above the score
+    // stems for checking the mix: 'voice' or 'music' (music + effects, ducked as in the mix)
+    if (stem === 'music') K.voiceBus.disconnect();
+    if (stem === 'voice') { K.music.disconnect(); K.sfx.disconnect(); }
   }
-  async function renderAudio() {
-    const ac = new OfflineAudioContext(2, 48000 * DUR, 48000); buildAudio(ac, 0); const buf = await ac.startRendering();
+  async function renderAudio(stem = null) {
+    const ac = new OfflineAudioContext(2, Math.ceil(48000 * DUR), 48000); buildAudio(ac, 0, stem); const buf = await ac.startRendering();
     const n = buf.length, ch = 2, view = new DataView(new ArrayBuffer(44 + n * ch * 2)); const ws = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
     ws(0, 'RIFF'); view.setUint32(4, 36 + n * ch * 2, true); ws(8, 'WAVE'); ws(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, ch, true); view.setUint32(24, 48000, true); view.setUint32(28, 48000 * ch * 2, true); view.setUint16(32, ch * 2, true); view.setUint16(34, 16, true); ws(36, 'data'); view.setUint32(40, n * ch * 2, true);
     const L = buf.getChannelData(0), Rr = buf.getChannelData(1); let o = 44; for (let i = 0; i < n; i++) { view.setInt16(o, clamp(L[i], -1, 1) * 32767, true); view.setInt16(o + 2, clamp(Rr[i], -1, 1) * 32767, true); o += 4; }

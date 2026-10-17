@@ -27,7 +27,7 @@
   window.__ready = A.load().then(() => true);
   window.__size = (w, h) => { c.width = w; c.height = h; };
   window.__frame = (t, type = 'image/jpeg', q = 0.95) => { A.draw(c, t); return c.toDataURL(type, q); };
-  window.__audio = async () => { const buf = await A.renderAudio(); let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+  window.__audio = async (stem) => { const buf = await A.renderAudio(stem); let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
   await window.__ready;
   A.draw(c, 8.5);
   let ac = null, playing = false; const time = document.getElementById('time');
