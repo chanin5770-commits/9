@@ -1,2 +1,4 @@
 .cache/
 __pycache__/
+# final render: kept out of git until verified (and if >100MB, delivered separately)
+dist/
