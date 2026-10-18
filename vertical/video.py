@@ -208,14 +208,80 @@ def text_layer(lines, fnt, fill, align='right', spacing=1.12, shadow=True, direc
     return layer, pad
 
 
-def tricolor(width=170, height=9, gap=6):
-    seg = (width - 2 * gap) // 3
-    im = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    for i, c in enumerate((BLUE, YELLOW, RED)):          # reads red-yellow-blue from the right
-        x0 = i * (seg + gap)
-        d.rounded_rectangle([x0, 0, x0 + seg, height - 1], radius=height // 2, fill=c + (255,))
-    return im
+# Brand wires under the titles: three insulated cables (red, yellow, blue) twisted
+# together like the cables in the logo, rendered as shaded 3D tubes.
+WIRE_COLORS = [(196, 32, 30), (228, 188, 38), (52, 92, 168)]     # sampled from the logo's cables
+WIRE_H = 40            # sprite height; the cable bundle is centred where the old colour bars sat
+WIRE_SS = 3            # supersampling for clean edges
+
+
+def render_wires(width, p):
+    """Three twisted cables, `width` px long. p (0..1) animates the entrance: the bundle
+    grows from the right (reading direction) while the cables wind into their twist."""
+    e = ease_out(p)
+    ss = WIRE_SS
+    w, h = width * ss, WIRE_H * ss
+    r, amp, lam = 5.6 * ss, 5.9 * ss, 86 * ss
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    xx += 0.5
+    yy += 0.5
+    x0, x1 = w * (1 - e) + r, w - r                       # left end moves out as it enters
+    if x1 - x0 < 1:
+        return Image.new('RGBA', (width, WIRE_H), (0, 0, 0, 0))
+    wind = 0.35 + 0.65 * e                                # untwisted -> fully wound
+    spin = (1 - e) * 2.4
+    cx = np.clip(xx, x0, x1)
+    best_z = np.full((h, w), -9.0, np.float32)
+    rgb = np.zeros((h, w, 3), np.float32)
+    cover = np.zeros((h, w), np.float32)
+    fields = []
+    for i in range(3):
+        ph = 2 * np.pi * (w - cx) / lam * wind + spin + 2 * np.pi * i / 3
+        f = h / 2 + amp * np.sin(ph)
+        df = -amp * np.cos(ph) * 2 * np.pi / lam * wind
+        d = (yy - f) / np.sqrt(1 + df ** 2)
+        dist = np.sqrt(d ** 2 + (xx - cx) ** 2)            # rounded, insulated end caps
+        z = np.cos(ph)
+        fields.append((dist, d, z))
+    for i, (dist, d, z) in enumerate(fields):
+        inside = dist < r
+        u = np.clip(d / r, -1, 1)
+        nz = np.sqrt(np.clip(1 - u ** 2, 0, 1))
+        diff = np.clip(-0.55 * u + 0.84 * nz, 0, 1)
+        spec = np.clip(-0.30 * u + 0.95 * nz, 0, 1) ** 28 * 0.55
+        depth = 0.80 + 0.20 * (z + 1) / 2
+        occl = np.ones_like(u)
+        for j, (dj, _, zj) in enumerate(fields):
+            if j != i:
+                occl = np.minimum(occl, np.where((zj > z) & (dj < r * 1.45), 0.62 + 0.38 * np.clip((dj - r) / (0.45 * r), 0, 1), 1))
+        col = np.array(WIRE_COLORS[i], np.float32) / 255
+        c = col[None, None, :] * (0.30 + 0.85 * diff * depth * occl)[..., None] + spec[..., None]
+        take = inside & (z > best_z)
+        rgb[take] = c[take]
+        best_z[take] = z[take]
+        cover[inside] = 1
+    # downsample (box filter) to the final size
+    rgb = (rgb * cover[..., None]).reshape(WIRE_H, ss, width, ss, 3).mean(axis=(1, 3))
+    a = cover.reshape(WIRE_H, ss, width, ss).mean(axis=(1, 3))
+    rgb = np.where(a[..., None] > 0, rgb / np.maximum(a[..., None], 1e-6), 0)
+    im = Image.fromarray(np.dstack([np.clip(rgb, 0, 1) * 255, a * 255]).astype(np.uint8), 'RGBA')
+    # soft contact shadow so the cables sit on any background
+    sh = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    sh.putalpha(im.getchannel('A').filter(ImageFilter.GaussianBlur(3)).point(lambda v: int(v * 0.55)))
+    out = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    out.alpha_composite(sh, (0, 3))
+    out.alpha_composite(im)
+    return out
+
+
+_wire_cache = {}
+
+
+def wire_sprite(width, p):
+    key = (width, min(30, max(0, round(p * 30))))
+    if key not in _wire_cache:
+        _wire_cache[key] = render_wires(width, key[1] / 30)
+    return _wire_cache[key]
 
 
 _cache = {}
@@ -249,24 +315,18 @@ def title_sprite(title):
         bar_gap, bottom = None, 1200 + title['row'] * 150
     else:
         raise ValueError(style)
-    sprite = layer
+    wire = None
     if bar_gap is not None:
-        bar = tricolor(200 if style in ('q2', 'service') else 170)
-        sprite = Image.new('RGBA', (layer.width, layer.height + bar_gap + bar.height), (0, 0, 0, 0))
-        sprite.alpha_composite(layer, (0, 0))
-        sprite.alpha_composite(bar, (layer.width - pad - bar.width, layer.height - pad + bar_gap))
-        bottom += bar_gap + bar.height
-    x = right - (sprite.width - pad)
-    y = bottom - (sprite.height - pad)
-    if style == 'service':
-        idx = ['תשתיות', 'לוחות חשמל', 'תאורה חכמה', 'עמדות טעינה'].index(title['text'])
-        num, npad = text_layer([f'0{idx + 1}/04'], font(700, 46), YELLOW, direction='ltr')
-        s2 = Image.new('RGBA', (sprite.width, sprite.height + num.height - npad), (0, 0, 0, 0))
-        s2.alpha_composite(num, (sprite.width - num.width - (pad - npad), 0))
-        s2.alpha_composite(sprite, (0, num.height - npad))
-        y -= num.height - npad
-        sprite = s2
-    _cache[key] = (sprite, x, y)
+        # the cables take the slot the 9 px colour bars used, so the titles keep their layout
+        bottom += bar_gap + 9
+        wire_w = 300 if style in ('q2', 'service') else 260
+        x = right - (layer.width - pad)
+        y = bottom - 9 - bar_gap - (layer.height - pad)
+        wire = (wire_w, right - wire_w, bottom - 9 / 2 - WIRE_H / 2)
+    else:
+        x = right - (layer.width - pad)
+        y = bottom - (layer.height - pad)
+    _cache[key] = (layer, x, y, wire)
     return _cache[key]
 
 
@@ -274,7 +334,7 @@ def draw_titles(canvas, t):
     for title in TITLES:
         if not title['t'] <= t < title['end']:
             continue
-        sprite, x, y = title_sprite(title)
+        sprite, x, y, wire = title_sprite(title)
         k = ease_out((t - title['t']) / 0.32)
         out = min(1.0, (title['end'] - t) / 0.12)
         alpha = k * out
@@ -286,6 +346,13 @@ def draw_titles(canvas, t):
             s = sprite.copy()
             s.putalpha(s.getchannel('A').point(lambda v: int(v * alpha)))
         canvas.alpha_composite(s, (int(x), int(y + dy)))
+        if wire:
+            ww, wx, wy = wire
+            ws = wire_sprite(ww, (t - title['t'] - 0.08) / 0.55)
+            if out < 1:
+                ws = ws.copy()
+                ws.putalpha(ws.getchannel('A').point(lambda v: int(v * out)))
+            canvas.alpha_composite(ws, (int(wx), int(round(wy + dy))))
 
 
 # ---------------------------------------------------------------- brand cards
