@@ -109,8 +109,18 @@ def grain():
     Image.fromarray(n, 'L').save(os.path.join(ROOT, 'public', 'fx', 'grain.png'))
 
 
+def narration():
+    # the recorded narration (source/) is played from public/audio/narration.wav
+    import shutil
+    src = os.path.join(SRC, 'narration-v1.wav')
+    if os.path.exists(src):
+        os.makedirs(os.path.join(ROOT, 'public', 'audio'), exist_ok=True)
+        shutil.copyfile(src, os.path.join(ROOT, 'public', 'audio', 'narration.wav'))
+
+
 if __name__ == '__main__':
     os.makedirs(os.path.join(ROOT, 'src', 'data'), exist_ok=True)
     panels()
     grain()
+    narration()
     clips()

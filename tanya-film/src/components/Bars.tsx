@@ -6,6 +6,13 @@ import { GATES, SCENES } from '../data/scenes';
 import { NARRATION } from '../data/narration';
 import { ALL_SHOTS, FPS, TIMELINE } from '../lib/timeline';
 import { appear, SANS, SERIF } from './text';
+import { useCaptions } from '../lib/mode';
+
+// ציטוט בתוך הכתובית (״…״) מודגש בזהב
+const renderCue = (text: string) =>
+  text.split(/(״[^״]*״)/).map((part, i) =>
+    part.startsWith('״') ? <span key={i} style={{ color: COLORS.goldSoft }}>{part}</span> : <span key={i}>{part}</span>,
+  );
 
 const fmt = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 const GATE_OF: Record<number, number> = {};
@@ -38,7 +45,9 @@ export const Bars: React.FC = () => {
   const sc = cur.scene;
   const onGate = shot.shot.kind === 'gate';
   const t = f / FPS;
+  const captions = useCaptions();
   const cue = NARRATION.cues.find((c) => t >= c.start && t <= c.end);
+  const cueFade = cue ? Math.min(1, (t - cue.start) / 0.12, (cue.end - t) / 0.12) : 0;
 
   // שם התחנה מופיע בתחילת התחנה (אחרי כרטיס השער, אם יש)
   const firstReal = cur.shots.find((s) => s.shot.kind !== 'gate')!;
@@ -67,19 +76,27 @@ export const Bars: React.FC = () => {
         </div>
       ) : null}
 
-      {/* כתוביות קריינות — עד שתי שורות */}
-      {cue ? (
-        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 56 }}>
-          <div style={{ fontFamily: SANS, fontSize: 52, fontWeight: 500, lineHeight: 1.3, color: '#fff', textAlign: 'center', direction: 'rtl', maxWidth: 1600, padding: '8px 26px', borderRadius: 10, background: 'rgba(3,6,12,.62)' }}>
-            {cue.text.split('\n').slice(0, 2).map((l, i) => <div key={i}>{l}</div>)}
-          </div>
-        </AbsoluteFill>
+      {/* כתוביות קריינות — עד שתי שורות. בכרטיסי טקסט: גדולות במרכז; בזמן הפסוק: לא מוצגות (הוא כבר על המסך) */}
+      {cue && captions && !(shot.shot.kind === 'graphic' && shot.shot.g === 'verse') ? (
+        shot.shot.kind === 'graphic' && shot.shot.g === 'text' ? (
+          <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ opacity: cueFade, fontFamily: SERIF, fontSize: 64, fontWeight: 500, lineHeight: 1.35, color: COLORS.cream, textAlign: 'center', direction: 'rtl', maxWidth: 1500, textShadow: '0 2px 18px rgba(0,0,0,.9)' }}>
+              {renderCue(cue.text)}
+            </div>
+          </AbsoluteFill>
+        ) : (
+          <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 72 }}>
+            <div style={{ opacity: cueFade, fontFamily: SANS, fontSize: 50, fontWeight: 500, lineHeight: 1.32, color: '#fff', textAlign: 'center', direction: 'rtl', maxWidth: 1560, padding: '8px 26px', borderRadius: 10, background: 'rgba(3,6,12,.62)' }}>
+              {renderCue(cue.text)}
+            </div>
+          </AbsoluteFill>
+        )
       ) : null}
 
       {/* מידע טיוטה */}
       {DRAFT ? (
         <div style={{ position: 'absolute', bottom: 14, left: 24, direction: 'rtl', fontFamily: SANS, fontSize: 20, color: 'rgba(170,180,196,.8)', fontVariantNumeric: 'tabular-nums', textShadow: '0 1px 4px #000' }}>
-          טיוטה {NARRATION.file ? '' : '· ללא קריינות · תזמון זמני'} · סצנה {sc.id} · שוט {shot.index + 1}
+          טיוטה {NARRATION.file ? '· קריינות v1' : '· ללא קריינות · תזמון זמני'} · סצנה {sc.id} · שוט {shot.index + 1}
           {shot.shot.kind === 'still' ? <span style={{ color: COLORS.verify }}> · סטילס זמני (פריים {shot.shot.src})</span> : null}
           {shot.shot.kind === 'clip' ? <span style={{ color: '#8fd19e' }}> · קליפ</span> : null} ·{' '}
           <span style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>{fmt(t)}</span>

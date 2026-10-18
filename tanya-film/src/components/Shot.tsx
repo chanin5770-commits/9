@@ -4,6 +4,7 @@ import { FOCUS, Move, Shot } from '../data/scenes';
 import { PlacedShot } from '../lib/timeline';
 import { Graphic, GateCard } from './Graphics';
 import { ShotText } from './text';
+import { HAS_NARRATION } from '../data/narration';
 
 const ease = Easing.inOut(Easing.sin);
 
@@ -58,7 +59,8 @@ export const ShotView: React.FC<{ placed: PlacedShot }> = ({ placed }) => {
       ) : (
         <Graphic shot={shot} f={f} dur={dur} />
       )}
-      {(shot.kind === 'still' || shot.kind === 'clip') && shot.text ? <ShotText t={shot.text} f={f} dur={dur} /> : null}
+      {/* כשיש קריינות היא מספרת את הסיפור, והטקסט על הצילום יורד */}
+      {(shot.kind === 'still' || shot.kind === 'clip') && shot.text && !HAS_NARRATION ? <ShotText t={shot.text} f={f} dur={dur} /> : null}
     </AbsoluteFill>
   );
 };

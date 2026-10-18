@@ -10,6 +10,7 @@ import { ShotView } from './components/Shot';
 import { Bars } from './components/Bars';
 import { Sound } from './components/Sound';
 import { ALL_SHOTS, TIMELINE } from './lib/timeline';
+import { CaptionsContext } from './lib/mode';
 
 // צבעוניות: מקר וכחול בתחילת המסע לחם וזהוב בסופו
 const Grade: React.FC = () => {
@@ -48,9 +49,10 @@ const useFonts = () => {
   }, [handle]);
 };
 
-export const Film: React.FC = () => {
+export const Film: React.FC<{ captions: boolean }> = ({ captions }) => {
   useFonts();
   return (
+    <CaptionsContext.Provider value={captions}>
     <AbsoluteFill style={{ background: '#000' }}>
       {ALL_SHOTS.map((p, i) => (
         <Sequence key={i} from={p.from} durationInFrames={p.dur} layout="none">
@@ -62,5 +64,6 @@ export const Film: React.FC = () => {
       <Bars />
       <Sound />
     </AbsoluteFill>
+    </CaptionsContext.Provider>
   );
 };

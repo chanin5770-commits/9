@@ -7,6 +7,8 @@ import { GATES, GateShot, GraphicShot, SCENES, Text } from '../data/scenes';
 import { Frame } from './Shot';
 import { appear, LineSequence, SANS, SERIF } from './text';
 import { graphicIntro } from '../lib/reading';
+import { useCaptions } from '../lib/mode';
+import { HAS_NARRATION } from '../data/narration';
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 const fadeIn = (f: number, a: number, b: number) => interpolate(f, [a, b], [0, 1], clamp);
@@ -321,8 +323,18 @@ const Crossroads: React.FC<{ f: number }> = ({ f }) => {
 };
 
 export const Graphic: React.FC<{ shot: GraphicShot; f: number; dur: number }> = ({ shot, f, dur }) => {
-  const lines: Text[] = shot.lines ?? [];
+  const captions = useCaptions();
   const g = shot.g;
+  // מה מוצג מהשורות של הגרפיקה:
+  //  בלי קריינות — הכול.
+  //  עם קריינות וכתוביות — רק הפסוק (הכתוביות נושאות את השאר; בכרטיסי טקסט הן מוצגות במרכז).
+  //  עם קריינות בלי כתוביות — בכרטיסי טקסט הכול; בתרשימים רק ציטוט, חידוש ומשל.
+  const all: Text[] = shot.lines ?? [];
+  const lines: Text[] = !HAS_NARRATION
+    ? all
+    : captions
+      ? g === 'verse' ? all : []
+      : g === 'text' || g === 'verse' ? all : all.filter((t) => t.kind === 'quote' || t.kind === 'insight' || t.kind === 'mashal');
   const stage = shot.stage ?? 1;
   const centered = g === 'text' || g === 'verse';
   // כמה זמן התרשים לבד על המסך לפני שהשורה הראשונה עולה

@@ -1,6 +1,4 @@
 // הגדרות כלליות של הסרט
-import { NARRATION } from './data/narration';
-
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
 
@@ -8,9 +6,9 @@ export const HEIGHT = 1080;
 // לכבות לפני הייצוא הסופי.
 export const DRAFT = true;
 
-// שוליים בטוחים, ומיקום הטקסט על המסך. כשיש כתוביות קריינות הטקסט עולה מעליהן.
+// שוליים בטוחים, ומיקום הטקסט על המסך
 export const SAFE_X = 110;
-export const TEXT_BOTTOM = NARRATION.cues.length ? 250 : 120;
+export const TEXT_BOTTOM = 120;
 
 export const COLORS = {
   navy: '#0a1426',

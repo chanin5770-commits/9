@@ -24,6 +24,9 @@ export type PlacedShot = {
 export type PlacedScene = { scene: Scene; index: number; from: number; dur: number; shots: PlacedShot[] };
 
 const overrides = (timing.sceneSeconds ?? {}) as Record<string, number>;
+// תוספת זמן לשוט מסוים, בשניות ("12/8": 3.2) — מהסנכרון לקריינות (tools/sync-narration.mjs)
+export type ShotExtra = Record<string, number>;
+const TIMING_EXTRA = ((timing as { shotExtra?: ShotExtra }).shotExtra ?? {}) as ShotExtra;
 
 export const clipLength = (src: string): number => {
   const n = (clipFrames as Record<string, number>)[src];
@@ -35,8 +38,8 @@ const baseLen = (s: Shot) =>
   s.kind === 'clip' ? Math.min(clipLength(s.src), s.maxSec ? Math.round(s.maxSec * FPS) : Infinity) : Math.round(s.sec * FPS);
 const shotFade = (s: Shot, i: number) => (i === 0 ? 0 : s.fade ?? 0);
 
-function sceneLengths(scene: Scene): number[] {
-  const lens = scene.shots.map(baseLen);
+function sceneLengths(scene: Scene, extra: ShotExtra): number[] {
+  const lens = scene.shots.map((s, i) => baseLen(s) + Math.round((extra[`${scene.id}/${i + 1}`] ?? 0) * FPS));
   const overlap = scene.shots.reduce((a, s, i) => a + shotFade(s, i), 0);
   const target = overrides[scene.id];
   if (!target) return lens;
@@ -48,7 +51,7 @@ function sceneLengths(scene: Scene): number[] {
   return scene.shots.map((s, i) => (s.kind === 'clip' ? lens[i] : Math.round(lens[i] * k)));
 }
 
-function layout() {
+export function buildTimeline(extra: ShotExtra = TIMING_EXTRA) {
   const scenes: PlacedScene[] = [];
   let t = 0;
   SCENES.forEach((scene, si) => {
@@ -56,7 +59,7 @@ function layout() {
     const nextIsGate = !!next && next.shots[0].kind === 'gate';
     const startsWithGate = scene.shots[0].kind === 'gate';
     if (si > 0 && !startsWithGate) t -= SCENE_XFADE; // הצלבה עם הסצנה הקודמת
-    const lens = sceneLengths(scene);
+    const lens = sceneLengths(scene, extra);
     const from = t;
     const shots: PlacedShot[] = [];
     scene.shots.forEach((shot, i) => {
@@ -74,7 +77,7 @@ function layout() {
   return { scenes, total: t };
 }
 
-export const TIMELINE = layout();
+export const TIMELINE = buildTimeline();
 export const TOTAL_FRAMES = TIMELINE.total;
 export const ALL_SHOTS = TIMELINE.scenes.flatMap((s) => s.shots);
 

@@ -1,7 +1,7 @@
-// הסאונד: רקע לכל סצנה, אפקטים לפי שוט, מוזיקה עם שקט מכוון, וקריינות (כשתגיע)
+// הסאונד: רקע לכל סצנה, אפקטים לפי שוט, מוזיקה עם שקט מכוון, והקריינות
 import React from 'react';
 import { Audio, Sequence, interpolate, staticFile } from 'remotion';
-import { NARRATION } from '../data/narration';
+import { HAS_NARRATION, NARRATION } from '../data/narration';
 import { ALL_SHOTS, FPS, TIMELINE, TOTAL_FRAMES } from '../lib/timeline';
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
@@ -10,7 +10,7 @@ const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 const SILENT = ALL_SHOTS.filter((s) => s.shot.silence).map((s) => [s.from, s.from + s.dur]);
 const speaking = (f: number) => NARRATION.cues.some((c) => f / FPS > c.start - 0.4 && f / FPS < c.end + 0.6);
 // בזמן דיבור: מוזיקה ואפקטים יורדים
-const duck = (f: number) => (speaking(f) ? 0.4 : 1);
+const duck = (f: number) => (speaking(f) ? 0.35 : HAS_NARRATION ? 0.75 : 1);
 
 const musicVol = (f: number) => {
   const fade = Math.min(1, f / (3 * FPS), (TOTAL_FRAMES - f) / (5 * FPS));
@@ -18,7 +18,9 @@ const musicVol = (f: number) => {
   for (const [a, b] of SILENT) silence = Math.min(silence, interpolate(f, [a - 14, a, b, b + 20], [1, 0, 0, 1], clamp));
   let level = 1;
   for (const s of TIMELINE.scenes) if (f >= s.from) level = s.scene.music ?? 1;
-  return Math.max(0, fade) * silence * level * (speaking(f) ? 0.22 : 0.5);
+  // עם קריינות המוזיקה נשארת ברקע: נמוכה בהפסקות, ונמוכה עוד יותר מתחת לדיבור
+  const base = HAS_NARRATION ? (speaking(f) ? 0.1 : 0.26) : speaking(f) ? 0.22 : 0.5;
+  return Math.max(0, fade) * silence * level * base;
 };
 
 export const Sound: React.FC = () => (
@@ -49,10 +51,20 @@ export const Sound: React.FC = () => (
       }),
     )}
 
-    {NARRATION.file ? (
-      <Sequence from={Math.round(NARRATION.offset * FPS)} layout="none">
-        <Audio src={staticFile(NARRATION.file)} />
-      </Sequence>
-    ) : null}
+    {/* הקריינות: כל קטע מההקלטה במקומו בסרט, באורכו המלא */}
+    {HAS_NARRATION
+      ? NARRATION.segments.map((s, i) => {
+          const from = Math.round(s.filmStart * FPS) - 1;
+          // חיתוך בתוך ההפסקות שבהקלטה: פריים לפני תחילת הדיבור, שני פריימים אחרי סופו
+          const a = Math.max(0, Math.floor(s.audioStart * FPS) - 1);
+          const b = Math.ceil(s.audioEnd * FPS) + 2;
+          const len = b - a;
+          return (
+            <Sequence key={`vo-${i}`} from={from} durationInFrames={len} layout="none">
+              <Audio src={staticFile(NARRATION.file!)} trimBefore={a} trimAfter={b} />
+            </Sequence>
+          );
+        })
+      : null}
   </>
 );
