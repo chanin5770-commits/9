@@ -10,5 +10,13 @@
   "b-strain": 50,
   "b-write": 55,
   "b-walk": 62,
-  "b-smile": 67
+  "b-smile": 67,
+  "c-phone-down": 51,
+  "c-street-help": 55,
+  "c-desk": 75,
+  "c-walk": 64,
+  "d-bus": 75,
+  "d-beit-midrash": 75,
+  "d-stone-path": 73,
+  "d-sunrise": 113
 }

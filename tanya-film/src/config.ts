@@ -1,30 +1,26 @@
 // הגדרות כלליות של הסרט
+import { NARRATION } from './data/narration';
+
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
 
-// מסגרת קולנועית 2.39:1. הפאנלים בסטוריבורד הם ביחס ~2.4:1, כך שהם ממלאים את
-// התמונה בלי חיתוך ובלי הגדלה מוגזמת; הפסים העליון והתחתון נושאים את סימון
-// ההתקדמות ואת הכתוביות. LETTERBOX=false => התמונה ממלאת את כל 16:9.
-export const LETTERBOX = true;
-export const BAR = LETTERBOX ? 138 : 0;
-export const PIC_TOP = BAR;
-export const PIC_H = HEIGHT - 2 * BAR;
-
-// גרסת טיוטה: מציגה מזהה סצנה, תזמון ותגיות ״דורש אימות״. לכבות לייצוא הסופי.
+// גרסת טיוטה: מציגה מזהה סצנה ושוט, סימון ״סטילס זמני״ ותגיות ״דורש אימות״.
+// לכבות לפני הייצוא הסופי.
 export const DRAFT = true;
 
-// מעברים (בפריימים, ב-24fps)
-export const SHOT_XFADE = 16; // בין שוטים בתוך סצנה
-export const SCENE_XFADE = 24; // מעבר ״cross״ בין סצנות
-export const FADE_IN_BLACK = 20; // כניסה מחושך (מעבר ״black״)
-export const FADE_OUT_BLACK = 16; // יציאה לחושך לפני סצנה עם מעבר ״black״
+// שוליים בטוחים, ומיקום הטקסט על המסך. כשיש כתוביות קריינות הטקסט עולה מעליהן.
+export const SAFE_X = 110;
+export const TEXT_BOTTOM = NARRATION.cues.length ? 250 : 120;
 
 export const COLORS = {
   navy: '#0a1426',
-  ink: '#05080f',
+  ink: '#04070d',
   gold: '#d9b36a',
-  goldSoft: '#e8cf98',
-  text: '#f2efe8',
-  muted: '#9aa6b8',
+  goldSoft: '#ecd39c',
+  cream: '#f6efe0',
+  text: '#f4f1ea',
+  muted: '#aab4c4',
+  blue: '#5b8fd6',
+  ember: '#e0703a',
   verify: '#ff9f43',
 };

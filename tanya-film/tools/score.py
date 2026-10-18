@@ -7,21 +7,20 @@ crossroads, tension in the third gate, a held breath before the choice
 (scene 12), and D major from the verse in scene 17 to the end.
 Replace with a licensed track for the final film (src/Film.tsx, <Score/>).
 
-Reads the scene lengths from src/data/timing.json, so re-run it after the
-timing is synced to the narration:  python3 tools/score.py
+Reads the scene times from docs/scene-times.json, so re-run it (after
+node tools/scene-table.mjs) whenever the timing changes:  python3 tools/score.py
 """
 import json, os, wave
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SR = 44100
-timing = json.load(open(os.path.join(ROOT, 'src', 'data', 'timing.json')))
-secs = timing['sceneSeconds']
-ids = sorted(secs)
-starts, t = {}, 0.0
-for i in ids:
-    starts[i] = t
-    t += secs[i]
+# scene start/end times come from the film itself (written by tools/scene-table.mjs)
+times = json.load(open(os.path.join(ROOT, 'docs', 'scene-times.json')))
+ids = [x['id'] for x in times]
+starts = {x['id']: x['start'] for x in times}
+secs = {x['id']: x['end'] - x['start'] for x in times}
+t = times[-1]['end']
 TOTAL = t + 1.0
 
 NOTE = {n: i for i, n in enumerate(['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'])}

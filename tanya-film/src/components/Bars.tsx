@@ -1,124 +1,87 @@
+// שכבת המידע מעל התמונה: סימון התקדמות, שם התחנה, כתוביות קריינות ומידע טיוטה
 import React from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion';
-import { BAR, COLORS, DRAFT, HEIGHT, LETTERBOX } from '../config';
+import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { COLORS, DRAFT } from '../config';
 import { GATES, SCENES } from '../data/scenes';
 import { NARRATION } from '../data/narration';
-import { FPS, TIMELINE } from '../lib/timeline';
-import { SANS } from './text';
-
-// לאיזו תחנה שייך כל שער (לסימון ההתקדמות)
-const GATE_OF_STATION: number[] = [];
-{
-  let g = 0;
-  SCENES.forEach((s) => {
-    if (s.gate) g = s.gate;
-    if (s.station) GATE_OF_STATION[s.station] = g;
-  });
-}
-
-const currentScene = (f: number) => {
-  let cur = TIMELINE.scenes[0];
-  for (const s of TIMELINE.scenes) if (f >= s.from) cur = s;
-  return cur;
-};
+import { ALL_SHOTS, FPS, TIMELINE } from '../lib/timeline';
+import { appear, SANS, SERIF } from './text';
 
 const fmt = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+const GATE_OF: Record<number, number> = {};
+SCENES.forEach((s) => s.station && (GATE_OF[s.station] = s.gate!));
 
-const Progress: React.FC<{ station: number }> = ({ station }) => (
+const Dots: React.FC<{ station: number }> = ({ station }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 7, direction: 'rtl' }}>
     {Array.from({ length: 17 }, (_, i) => {
       const n = i + 1;
-      const gap = n > 1 && GATE_OF_STATION[n] !== GATE_OF_STATION[n - 1];
-      const done = n < station;
       const now = n === station;
+      const done = n < station;
       return (
-        <div
-          key={n}
-          style={{
-            width: now ? 13 : 8, height: now ? 13 : 8, borderRadius: '50%',
-            marginInlineStart: gap ? 12 : 0,
-            background: now ? COLORS.gold : done ? 'rgba(217,179,106,.55)' : 'transparent',
-            border: now || done ? 'none' : '1px solid rgba(217,179,106,.45)',
-            boxShadow: now ? '0 0 12px rgba(217,179,106,.8)' : 'none',
-          }}
-        />
+        <div key={n} style={{
+          width: now ? 14 : 9, height: now ? 14 : 9, borderRadius: '50%',
+          marginInlineStart: n > 1 && GATE_OF[n] !== GATE_OF[n - 1] ? 12 : 0,
+          background: now ? COLORS.gold : done ? 'rgba(217,179,106,.6)' : 'transparent',
+          border: now || done ? 'none' : '1.5px solid rgba(217,179,106,.5)',
+          boxShadow: now ? '0 0 12px rgba(217,179,106,.9)' : 'none',
+        }} />
       );
     })}
   </div>
 );
 
-// הפס העליון: שער ותחנה. הפס התחתון: כתוביות, ובטיוטה גם מזהה סצנה וזמן.
 export const Bars: React.FC = () => {
   const f = useCurrentFrame();
-  const cur = currentScene(f);
+  let cur = TIMELINE.scenes[0];
+  for (const s of TIMELINE.scenes) if (f >= s.from) cur = s;
+  const shot = [...ALL_SHOTS].reverse().find((s) => f >= s.from) ?? ALL_SHOTS[0];
   const sc = cur.scene;
-  const station = sc.station ?? 0;
-  const gate = station ? GATE_OF_STATION[station] : 0;
-  const localF = f - cur.from;
-  const fadeTop = interpolate(localF, [0, 24], [0, 1], { extrapolateRight: 'clamp' });
+  const onGate = shot.shot.kind === 'gate';
   const t = f / FPS;
   const cue = NARRATION.cues.find((c) => t >= c.start && t <= c.end);
-  const top = LETTERBOX ? 0 : 16;
-  const bottom = LETTERBOX ? HEIGHT - BAR : HEIGHT - 150;
+
+  // שם התחנה מופיע בתחילת התחנה (אחרי כרטיס השער, אם יש)
+  const firstReal = cur.shots.find((s) => s.shot.kind !== 'gate')!;
+  const tag = appear(f, firstReal.from + 8, 4 * FPS, 16, 18);
 
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      {/* פס עליון */}
-      <div
-        style={{
-          position: 'absolute', top, left: 0, right: 0, height: LETTERBOX ? BAR : 80,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 64px',
-          direction: 'rtl', fontFamily: SANS, opacity: station ? fadeTop : 0.0,
-        }}
-      >
-        <div style={{ fontSize: 24, color: COLORS.text, fontWeight: 300 }}>
-          {gate ? (
-            <>
-              <span style={{ color: COLORS.gold, fontWeight: 500, letterSpacing: 2 }}>{GATES[gate].name}</span>
-              <span style={{ color: COLORS.muted }}> · </span>
-              {GATES[gate].question}
-            </>
-          ) : null}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
-          <span style={{ fontSize: 22, color: COLORS.muted }}>
-            תחנה <span style={{ color: COLORS.text, fontWeight: 500 }}>{station}</span> מתוך 17
+      {/* סימון התקדמות — עדין, בפינה */}
+      {sc.station && !onGate ? (
+        <div style={{ position: 'absolute', top: 34, left: 48, display: 'flex', alignItems: 'center', gap: 18, direction: 'rtl', fontFamily: SANS, padding: '10px 18px', borderRadius: 12, background: 'rgba(4,7,13,.45)' }}>
+          <span style={{ fontSize: 26, color: COLORS.text }}>
+            <span style={{ color: COLORS.gold, fontWeight: 500 }}>{GATES[sc.gate!].name}</span>
+            <span style={{ color: COLORS.muted }}> · </span>תחנה {sc.station} מתוך 17
           </span>
-          <Progress station={station} />
+          <Dots station={sc.station} />
         </div>
-      </div>
+      ) : null}
 
-      {/* כתוביות קריינות */}
-      {cue ? (
-        <div
-          style={{
-            position: 'absolute', top: bottom, left: 0, right: 0, height: LETTERBOX ? BAR : 150,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl',
-          }}
-        >
-          <div
-            style={{
-              fontFamily: SANS, fontSize: 40, lineHeight: 1.3, color: COLORS.text, textAlign: 'center',
-              maxWidth: 1500, textShadow: '0 2px 8px rgba(0,0,0,.9)',
-              background: LETTERBOX ? 'none' : 'rgba(3,6,12,.55)', padding: LETTERBOX ? 0 : '6px 18px', borderRadius: 6,
-            }}
-          >
-            {cue.text.split('\n').slice(0, 2).map((l, i) => (
-              <div key={i}>{l}</div>
-            ))}
+      {/* שם התחנה */}
+      {sc.station && tag.visible ? (
+        <div style={{ position: 'absolute', top: 40, right: 64, direction: 'rtl', opacity: tag.opacity, transform: tag.transform, filter: tag.filter }}>
+          <div style={{ fontFamily: SANS, fontSize: 32, fontWeight: 500, letterSpacing: 3, color: COLORS.gold, textShadow: '0 2px 10px rgba(0,0,0,.9)' }}>
+            תחנה {sc.station} · {sc.chapter}
           </div>
+          <div style={{ fontFamily: SERIF, fontSize: 84, fontWeight: 500, color: COLORS.text, textShadow: '0 3px 20px rgba(0,0,0,.9)' }}>{sc.title}</div>
         </div>
+      ) : null}
+
+      {/* כתוביות קריינות — עד שתי שורות */}
+      {cue ? (
+        <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 56 }}>
+          <div style={{ fontFamily: SANS, fontSize: 52, fontWeight: 500, lineHeight: 1.3, color: '#fff', textAlign: 'center', direction: 'rtl', maxWidth: 1600, padding: '8px 26px', borderRadius: 10, background: 'rgba(3,6,12,.62)' }}>
+            {cue.text.split('\n').slice(0, 2).map((l, i) => <div key={i}>{l}</div>)}
+          </div>
+        </AbsoluteFill>
       ) : null}
 
       {/* מידע טיוטה */}
       {DRAFT ? (
-        <div
-          style={{
-            position: 'absolute', bottom: 14, left: 24, direction: 'rtl', fontFamily: SANS, fontSize: 17,
-            color: 'rgba(154,166,184,.75)', fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          טיוטה · {NARRATION.file ? 'עם קריינות' : 'ללא קריינות · תזמון זמני'} · סצנה {sc.id} · {sc.title} ·{' '}
+        <div style={{ position: 'absolute', bottom: 14, left: 24, direction: 'rtl', fontFamily: SANS, fontSize: 20, color: 'rgba(170,180,196,.8)', fontVariantNumeric: 'tabular-nums', textShadow: '0 1px 4px #000' }}>
+          טיוטה {NARRATION.file ? '' : '· ללא קריינות · תזמון זמני'} · סצנה {sc.id} · שוט {shot.index + 1}
+          {shot.shot.kind === 'still' ? <span style={{ color: COLORS.verify }}> · סטילס זמני (פריים {shot.shot.src})</span> : null}
+          {shot.shot.kind === 'clip' ? <span style={{ color: '#8fd19e' }}> · קליפ</span> : null} ·{' '}
           <span style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>{fmt(t)}</span>
         </div>
       ) : null}

@@ -18,9 +18,16 @@ SRC = os.path.join(ROOT, 'source')
 PANELS = os.path.join(ROOT, 'public', 'panels')
 CLIPS = os.path.join(ROOT, 'public', 'clips')
 
-# panel grid measured from the gold frame lines of the 1536x1024 board
-COLS = [(13, 390), (399, 764), (772, 1136), (1146, 1524)]
-ROWS = [(64, 217), (251, 404), (436, 588), (621, 765), (798, 971)]
+# storyboard boards: grid measured from the gold frame lines; frames are numbered
+# row by row starting at `first`. `trim_bottom` cuts off the frame-number badge.
+BOARDS = [
+    dict(file='storyboard.png', first=0, trim_bottom=0,
+         cols=[(13, 390), (399, 764), (772, 1136), (1146, 1524)],
+         rows=[(64, 217), (251, 404), (436, 588), (621, 765), (798, 971)]),
+    dict(file='storyboard-2-choice-moments.png', first=40, trim_bottom=26,
+         cols=[(10, 381), (393, 763), (774, 1144), (1155, 1527)],
+         rows=[(52, 201), (210, 355), (364, 508), (517, 666), (674, 813), (822, 997)]),
+]
 UPSCALE_W = 2880
 
 # shot id -> (source clip, start s, end s, speed); speed < 1 = slow motion
@@ -37,20 +44,31 @@ CLIP_SHOTS = {
     'b-write':       ('clip-b-crossroads-desk.mp4',  6.10, 7.04, 0.40),
     'b-walk':        ('clip-b-crossroads-desk.mp4',  7.13, 8.33, 0.45),
     'b-smile':       ('clip-b-crossroads-desk.mp4',  8.42, 9.98, 0.55),
+    'c-phone-down':  ('clip-c-day-in-life.mp4',      2.92, 3.88, 0.45),
+    'c-street-help': ('clip-c-day-in-life.mp4',      3.92, 5.18, 0.55),
+    'c-desk':        ('clip-c-day-in-life.mp4',      5.22, 7.75, 0.80),
+    'c-walk':        ('clip-c-day-in-life.mp4',      7.85, 9.98, 0.80),
+    'd-bus':         ('clip-d-bus-path.mp4',         0.05, 1.95, 0.60),
+    'd-beit-midrash': ('clip-d-bus-path.mp4',        2.05, 3.95, 0.60),
+    'd-stone-path':  ('clip-d-bus-path.mp4',         4.05, 5.90, 0.60),
+    'd-sunrise':     ('clip-d-bus-path.mp4',         6.00, 9.98, 0.85),
 }
 
 
 def panels():
     os.makedirs(PANELS, exist_ok=True)
-    board = Image.open(os.path.join(SRC, 'storyboard.png')).convert('RGB')
-    for i in range(20):
-        (x0, x1), (y0, y1) = COLS[i % 4], ROWS[i // 4]
-        crop = board.crop((x0, y0, x1, y1))
-        h = round(UPSCALE_W * crop.height / crop.width)
-        big = crop.resize((UPSCALE_W, h), Image.LANCZOS)
-        big = big.filter(ImageFilter.UnsharpMask(radius=3, percent=60, threshold=2))
-        big.save(os.path.join(PANELS, f'{i:02d}.jpg'), quality=92)
-    print('panels: 20 frames ->', PANELS)
+    n = 0
+    for b in BOARDS:
+        board = Image.open(os.path.join(SRC, b['file'])).convert('RGB')
+        for r, (y0, y1) in enumerate(b['rows']):
+            for c, (x0, x1) in enumerate(b['cols']):
+                crop = board.crop((x0, y0, x1, y1 - b['trim_bottom']))
+                h = round(UPSCALE_W * crop.height / crop.width)
+                big = crop.resize((UPSCALE_W, h), Image.LANCZOS)
+                big = big.filter(ImageFilter.UnsharpMask(radius=3, percent=60, threshold=2))
+                big.save(os.path.join(PANELS, f"{b['first'] + r * len(b['cols']) + c:02d}.jpg"), quality=92)
+                n += 1
+    print(f'panels: {n} frames ->', PANELS)
 
 
 def clips():
