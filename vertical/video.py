@@ -4,9 +4,10 @@
     python vertical/video.py --stills 1,8.3,40  # single frames -> dist/stills/
     python vertical/video.py --out x.mp4 --crf 23 --preset veryfast   # quick preview
 
-Footage is decoded by ffmpeg (trim, time-stretch, motion interpolation, grade),
-then framed, titled and composited here with Pillow, and piped to ffmpeg for
-H.264 encoding together with the mix from audio.py.
+Footage is decoded by ffmpeg (trim, time-stretch, motion interpolation), the real
+photos of Yosef get slow camera moves, and everything is framed, graded (one film
+look for all sources, plus fine grain), titled and composited here with Pillow, then
+piped to ffmpeg for H.264 encoding together with the mix from audio.py.
 """
 import argparse
 import hashlib
@@ -19,7 +20,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from edit import (CARD_CHOOSE, CARD_END, CARD_LOGO, DURATION, FONTS, FPS, H, KITCHEN, LOGO,
-                  PHONE, ROOT, SHOTS, TITLES, W, WORK)
+                  PHONE, PHOTOS, ROOT, SHOTS, TITLES, W, WORK)
 
 SRC_W, SRC_H = 1280, 720
 SAFE_X = int(W * 0.08)          # 86 px each side
@@ -87,18 +88,61 @@ def decode_shot(shot):
     return frames
 
 
+_photos = {}
+
+
+def load_photo(name):
+    if name not in _photos:
+        _photos[name] = Image.open(os.path.join(PHOTOS, name)).convert('RGB')
+    return _photos[name]
+
+
 def frame_shot(src, shot, k):
-    """Crops the source frame to 9:16 with a sub-pixel push-in and drift."""
-    h = shot['h'] * (1 + (shot.get('z', 1) - 1) * k)
+    """Crops the source to 9:16 with a sub-pixel push-in and drift.
+
+    src is a video frame (array) or, for photos, the photo itself. Photo moves are
+    eased in and out so they read as a slow dolly rather than a zoom."""
+    im = src if isinstance(src, Image.Image) else Image.fromarray(src)
+    sw, sh = im.size
+    if isinstance(src, Image.Image):
+        k = k * k * (3 - 2 * k)
+    h = min(shot['h'] * (1 + (shot.get('z', 1) - 1) * k), sh)
     w = h * 9 / 16
     cx = shot['cx'] + shot.get('dx', 0) * k
     cy = shot['cy'] + shot.get('dy', 0) * k
-    cx = min(max(cx, w / 2), SRC_W - w / 2)
-    cy = min(max(cy, h / 2), SRC_H - h / 2)
-    im = Image.fromarray(src).transform((W, H), Image.Transform.EXTENT,
-                                        (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2),
-                                        Image.Resampling.BICUBIC)
-    return im.filter(ImageFilter.UnsharpMask(radius=2.2, percent=55, threshold=2))
+    cx = min(max(cx, w / 2), sw - w / 2)
+    cy = min(max(cy, h / 2), sh - h / 2)
+    box = (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+    if h > H:   # downscaling a large photo: Lanczos via resize keeps it crisp
+        out = im.resize((W, H), Image.Resampling.LANCZOS, box=box)
+        return out.filter(ImageFilter.UnsharpMask(radius=1.2, percent=30, threshold=2))
+    out = im.transform((W, H), Image.Transform.EXTENT, box, Image.Resampling.BICUBIC)
+    return out.filter(ImageFilter.UnsharpMask(radius=2.2, percent=55, threshold=2))
+
+
+def film_look(im, exposure=1.0):
+    """One grade for every source: gentle S-curve, cool shadows, warm highlights,
+    slightly restrained saturation."""
+    x = np.asarray(im, np.float32) / 255.0 * exposure
+    s = x * x * (3 - 2 * x)
+    x = x * 0.72 + s * 0.28
+    lum = (x[..., 0] * 0.2126 + x[..., 1] * 0.7152 + x[..., 2] * 0.0722)[..., None]
+    x = lum + (x - lum) * 0.93
+    hi, lo = lum ** 2, (1 - lum) ** 2
+    x += np.concatenate([0.022 * hi - 0.018 * lo, 0.004 * lo, -0.018 * hi + 0.026 * lo], axis=2)
+    return np.clip(x, 0, 1)
+
+
+_grain = None
+
+
+def add_grain(x, i):
+    """Fine luminance grain (cycled plates, so it is cheap and stable between renders)."""
+    global _grain
+    if _grain is None:
+        g = np.random.default_rng(3)
+        _grain = [g.normal(0, 1, (H, W, 1)).astype(np.float32) for _ in range(6)]
+    return x + _grain[i % 6] * (0.010 * (1.0 - 0.5 * x.mean(axis=2, keepdims=True)))
 
 
 def make_shade():
@@ -120,7 +164,7 @@ def text_layer(lines, fnt, fill, align='right', spacing=1.12, shadow=True, direc
     """Renders (possibly multi-line) text into a tight RGBA layer with a soft shadow."""
     asc, desc = fnt.getmetrics()
     lh = int((asc + desc) * spacing)
-    pad = 40
+    pad = 90
     widths = [int(fnt.getlength(l, direction=direction)) for l in lines]
     tw = max(widths) + 2 * pad
     th = lh * len(lines) + 2 * pad
@@ -138,7 +182,11 @@ def text_layer(lines, fnt, fill, align='right', spacing=1.12, shadow=True, direc
         d.text((x, y), l, font=fnt, fill=fill, anchor=anchor, direction=direction)
         dm.text((x, y), l, font=fnt, fill=255, anchor=anchor, direction=direction)
     if shadow:
-        sh = mask.filter(ImageFilter.GaussianBlur(14)).point(lambda v: int(v * 0.55))
+        # a tight shadow for edge definition plus a wide soft scrim, so white type
+        # still reads on white walls and white work shirts
+        tight = np.asarray(mask.filter(ImageFilter.GaussianBlur(12)), np.float32) * 0.6
+        wide = np.asarray(mask.filter(ImageFilter.GaussianBlur(38)), np.float32) * 1.5 * 0.42
+        sh = Image.fromarray(np.clip(np.maximum(tight, wide), 0, 255).astype(np.uint8), 'L')
         base = Image.new('RGBA', (tw, th), (0, 0, 0, 0))
         base.putalpha(sh)
         base = Image.alpha_composite(base, layer)
@@ -243,14 +291,33 @@ def load_logo():
     alpha = Image.fromarray((np.repeat(feather, W, axis=1) * 255).astype(np.uint8), 'L')
     logo = logo.convert('RGBA')
     logo.putalpha(alpha)
-    return logo, bg
+    # where the artwork is (lettering, bolt, cables): used only to light it, never to cut it out
+    la = np.asarray(logo.convert('RGB'), np.float32)
+    ink = np.clip((np.abs(la - np.array(bg, np.float32)).max(axis=2) - 18) / 40, 0, 1)
+    ink = np.asarray(Image.fromarray((ink * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.5)),
+                     np.float32) / 255
+    return logo, bg, ink
 
 
-LOGO_IM, CARD_BG = load_logo()
+LOGO_IM, CARD_BG, LOGO_INK = load_logo()
 
 
-def place_logo(canvas, cy, alpha=1.0, scale=1.0, dy=0.0):
-    lg = LOGO_IM
+def light_sweep(lg, p):
+    """A soft band of light glides across the logo, right to left (p: 0..1).
+    It brightens the artwork for a moment; the logo itself is not altered."""
+    if not 0 < p < 1:
+        return lg
+    h, w = LOGO_INK.shape
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    centre = w * (1.25 - 1.5 * p)
+    band = np.exp(-(((xx - 0.45 * yy) - centre) / 60) ** 2) * np.sin(np.pi * p)
+    a = np.asarray(lg, np.float32)
+    rgb = a[..., :3] + (255 - a[..., :3]) * (0.38 * band * LOGO_INK)[..., None]
+    return Image.fromarray(np.concatenate([rgb, a[..., 3:]], axis=2).astype(np.uint8), 'RGBA')
+
+
+def place_logo(canvas, cy, alpha=1.0, scale=1.0, dy=0.0, sweep=None):
+    lg = LOGO_IM if sweep is None else light_sweep(LOGO_IM, sweep)
     if scale != 1.0:
         lg = lg.resize((round(lg.width * scale), round(lg.height * scale)), Image.Resampling.LANCZOS)
     if alpha < 1:
@@ -274,15 +341,17 @@ def card(kind, t):
         centered(canvas, 'תבחרו נכון.', font(800, 118), NAVY, 690, k, (1 - k) * 26)
         if t >= CARD_CHOOSE['logo_at']:
             k = ease_out((t - CARD_CHOOSE['logo_at']) / 0.45)
-            place_logo(canvas, 1050, alpha=k, dy=(1 - k) * 28, scale=0.96 + 0.04 * k)
+            place_logo(canvas, 1050, alpha=k, dy=(1 - k) * 28, scale=0.96 + 0.04 * k,
+                       sweep=(t - CARD_CHOOSE['logo_at'] - 0.3) / 0.9)
     elif kind == 'CARD_LOGO':
         k = ease_out((t - CARD_LOGO['logo_at']) / 0.5)
-        place_logo(canvas, 900, scale=1.05 - 0.05 * k)
+        place_logo(canvas, 900, scale=1.05 - 0.05 * k, sweep=(t - CARD_LOGO['logo_at'] - 0.05) / 0.8)
     elif kind == 'CARD_END':
         e = CARD_END
         k = ease_out((t - e['logo_at']) / 0.45)
         drift = 0.012 * (t - e['logo_at']) / (DURATION - e['logo_at'])
-        place_logo(canvas, 740, alpha=k, dy=(1 - k) * 28, scale=0.97 + 0.03 * k + drift)
+        place_logo(canvas, 740, alpha=k, dy=(1 - k) * 28, scale=0.97 + 0.03 * k + drift,
+                   sweep=(t - e['logo_at'] - 0.35) / 1.0)
         if t >= e['slogan_at']:
             k = ease_out((t - e['slogan_at']) / 0.35)
             centered(canvas, 'יש על מי לבנות.', font(800, 104), NAVY, 1140, k, (1 - k) * 24)
@@ -322,14 +391,25 @@ def render_frames(times=None):
         idx = [i for i in range(f0, f1) if want is None or i in want]
         if not idx:
             continue
-        frames = None if shot['src'].startswith('CARD') else decode_shot(shot)
+        if shot['src'].startswith('CARD'):
+            frames = None
+        elif shot['src'] == 'P':
+            frames = load_photo(shot['img'])
+        else:
+            frames = decode_shot(shot)
         for i in idx:
             t = i / FPS
             if frames is None:
                 canvas = card(shot['src'], t)
             else:
                 k = (i - f0) / max(1, f1 - f0 - 1)
-                canvas = frame_shot(frames[i - f0], shot, k).convert('RGBA')
+                src = frames if isinstance(frames, Image.Image) else frames[i - f0]
+                x = film_look(frame_shot(src, shot, k), 0.95 if shot['src'] == 'P' else 1.0)
+                x = add_grain(x, i)
+                fade = shot.get('fade_in')
+                if fade:      # rises out of darkness on the bass hit
+                    x *= 0.15 + 0.85 * ease_out((t - shot['t']) / fade)
+                canvas = Image.fromarray((np.clip(x, 0, 1) * 255 + 0.5).astype(np.uint8)).convert('RGBA')
                 canvas.alpha_composite(shade)
             draw_titles(canvas, t)
             yield t, canvas.convert('RGB')
@@ -341,7 +421,7 @@ def main():
     ap.add_argument('--stills-dir', default=os.path.join(ROOT, 'dist', 'stills'))
     ap.add_argument('--audio', default=os.path.join(ROOT, 'dist', 'hashmali-cinematic-ad-vertical.wav'))
     ap.add_argument('--out', default=os.path.join(ROOT, 'dist', 'hashmali-cinematic-ad-vertical.mp4'))
-    ap.add_argument('--crf', default='16')
+    ap.add_argument('--crf', default='19')
     ap.add_argument('--preset', default='slow')
     args = ap.parse_args()
 

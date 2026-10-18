@@ -20,6 +20,7 @@ KITCHEN = os.path.join(ROOT, 'footage', 'clip-d-kitchen-design.mp4')   # 30 fps,
 WORK = os.path.join(ROOT, 'footage', 'clip-e-work-montage.mp4')         # 24 fps, 1280x720
 LOGO = os.path.join(ROOT, 'assets', 'logo-original.png')
 FONTS = os.path.join(ROOT, 'vertical', 'fonts')
+PHOTOS = os.path.join(ROOT, 'photos', 'yosef')
 
 PHONE = '058-5634770'
 
@@ -52,7 +53,10 @@ VO = [
     (38.88, 39.72, 40.55, 'יש על מי לבנות.'),
 ]
 
-# Shots. src: 'K' kitchen clip, 'W' work montage, or a brand card.
+# Shots. src: 'K' kitchen clip, 'W' work montage, 'P' a real photo of Yosef at work
+# (photos/yosef/, given slow camera moves), or a brand card.
+# Every shot of the electrician is a real photo of Yosef; the AI-generated work clip
+# is used only for shots with no face in them (plug, conduits, lighting, charger, tile).
 # a..b is the source range; it is time-stretched to fill the shot, and anything
 # slower than real time is motion-interpolated.
 # Framing: crop centre (cx, cy) and crop height h in source pixels (width = h*9/16);
@@ -67,11 +71,12 @@ SHOTS = [
     dict(t=3.80, end=4.60, src='K', a=6.00, b=6.72, cx=560, cy=430, h=560, z=0.95),           # lit drawer slides open
     dict(t=4.60, end=5.50, src='K', a=6.82, b=7.72, cx=620, cy=380, h=700, z=0.93),           # marble island from above
     # --- the question
-    dict(t=5.50, end=7.50, src='W', a=0.83, b=1.75, cx=440, cy=295, h=590, z=0.96, dx=20),    # electrician reads the plan
-    dict(t=7.50, end=9.50, src='W', a=7.50, b=8.42, cx=480, cy=295, h=590, z=0.93),           # at the distribution board
+    dict(t=5.50, end=7.50, src='P', img='yosef-01-home-panel.jpg', cx=620, cy=800, h=1600, z=0.86, dx=40, dy=-60,
+         fade_in=0.45),                                                                       # Yosef at a home panel
+    dict(t=7.50, end=9.50, src='P', img='yosef-03-meter-room.jpg', cx=640, cy=800, h=1600, z=0.70, dx=140, dy=287),  # the shirt: חשמלי
     dict(t=9.50, end=11.50, src='CARD_CHOOSE'),                                               # "תבחרו נכון." + logo
     # --- behind the walls
-    dict(t=11.50, end=12.70, src='W', a=1.83, b=2.34, cx=420, cy=300, h=590, z=0.94),         # cutting a channel
+    dict(t=11.50, end=12.70, src='P', img='yosef-04-main-switchboard.jpg', cx=560, cy=930, h=640, z=0.90, dx=-20),  # hands in the board
     dict(t=12.70, end=13.50, src='W', a=2.42, b=2.75, cx=820, cy=300, h=590, z=0.95, dx=-40), # conduits in the wall
     dict(t=13.50, end=17.00, src='K', a=1.60, b=3.73, cx=560, cy=370, h=700, z=0.92),         # the finished kitchen
     dict(t=17.00, end=19.50, src='W', a=2.83, b=3.96, cx=600, cy=300, h=590, z=0.95),         # plug at the coffee corner
@@ -81,16 +86,16 @@ SHOTS = [
     # --- the brand and the services
     dict(t=25.50, end=26.50, src='CARD_LOGO'),
     dict(t=26.50, end=27.35, src='W', a=2.42, b=2.75, cx=560, cy=290, h=560, z=0.95, dx=40),  # תשתיות
-    dict(t=27.35, end=28.70, src='W', a=6.50, b=7.10, cx=760, cy=300, h=560, z=0.94),         # לוחות חשמל
+    dict(t=27.35, end=28.70, src='P', img='yosef-04-main-switchboard.jpg', cx=760, cy=640, h=1250, z=0.97, dy=330),  # לוחות חשמל: tilt down to Yosef
     dict(t=28.70, end=29.60, src='K', a=0.40, b=1.10, cx=700, cy=250, h=520, z=0.95),         # תאורה חכמה
     dict(t=29.60, end=30.90, src='W', a=5.33, b=6.10, cx=700, cy=320, h=560, z=0.94),         # עמדות טעינה
     dict(t=30.90, end=31.70, src='W', a=4.40, b=5.20, cx=520, cy=300, h=590, z=0.95),         # לבתים
-    dict(t=31.70, end=32.65, src='W', a=7.95, b=8.42, cx=760, cy=290, h=580, z=0.95),         # לעסקים
-    dict(t=32.65, end=34.00, src='W', a=1.83, b=2.34, cx=700, cy=300, h=590, z=0.94),         # ולפרויקטים
+    dict(t=31.70, end=32.65, src='P', img='yosef-05-outdoor-cabinet.jpg', cx=500, cy=800, h=1600, z=0.92, dy=40),   # לעסקים
+    dict(t=32.65, end=34.00, src='P', img='yosef-02-rooftop-tester.jpg', cx=560, cy=800, h=1600, z=0.88, dy=80),    # ולפרויקטים
     # --- the call
-    dict(t=34.00, end=35.10, src='W', a=6.95, b=7.42, cx=640, cy=290, h=580, z=0.95),         # בונים?
+    dict(t=34.00, end=35.10, src='P', img='yosef-06-vest.jpg', cx=750, cy=1000, h=2000, z=0.90, dy=-60),            # בונים? (site vest)
     dict(t=35.10, end=36.20, src='W', a=0.38, b=0.75, cx=600, cy=300, h=590, z=0.95),         # משפצים?
-    dict(t=36.20, end=39.00, src='W', a=0.83, b=1.75, cx=560, cy=295, h=590, z=0.93),         # planning
+    dict(t=36.20, end=39.00, src='P', img='yosef-01-home-panel.jpg', cx=640, cy=900, h=1250, z=0.88, dx=-30, dy=150),   # Yosef at work
     dict(t=39.00, end=DURATION, src='CARD_END'),
 ]
 
@@ -126,12 +131,18 @@ CARD_END = dict(logo_at=39.00, slogan_at=40.55, phone_at=41.20, cta_at=41.70)
 
 # Sound design cues the score is built around.
 CUES = dict(
-    dip=(5.50, 9.50),        # music thins out under the question
-    choose_text=9.50,        # soft accent on "תבחרו נכון."
-    choose_logo=10.00,       # deep accent as the logo lands
-    groove=11.50,            # beat comes back in
-    brand=25.50,             # big hit on "חשמלי."
-    call=34.00,              # lighter, rhythmic: "בונים? משפצים?"
-    end=39.00,               # end-card hit and final chord
+    dip=(5.50, 9.50),        # the question: the score drops to sub, hum and a heartbeat
+    question_hit=8.00,       # deep hit under "לחשמל?"
+    choose_text=9.50,        # dark accent on "תבחרו נכון."
+    choose_logo=10.00,       # braam + impact as the logo lands
+    groove=11.50,            # the beat comes in and builds
+    brand=25.50,             # the drop on "חשמלי."
+    call=34.00,              # "בונים? משפצים?": leaner beat
+    end=39.00,               # sonic logo, end card
+    signature=41.60,         # closing brand signature after the last line
     plug=17.35,              # plug seats in the socket
+    # dramatic silences right before key moments: everything cuts out, then the hit
+    silences=[(5.30, 5.50), (9.22, 9.50), (25.22, 25.50), (38.72, 39.00)],
+    clacks=[11.55, 27.38, 27.62, 34.02],   # breakers / cabinet latches on the work shots
+    zaps=[10.02, 23.60, 29.62],            # restrained electric crackle
 )
