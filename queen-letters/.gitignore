@@ -1,4 +1,4 @@
 .cache/
 __pycache__/
-# final render: kept out of git until verified (and if >100MB, delivered separately)
-dist/
+# full-quality master (331MB) exceeds GitHub's file limit; the share encode is committed
+dist/malchat-haotiyot.mp4
