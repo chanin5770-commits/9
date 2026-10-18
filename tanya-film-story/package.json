@@ -1,0 +1,32 @@
+{
+  "name": "tanya-journey-film",
+  "private": true,
+  "version": "0.1.0",
+  "description": "המסע בדרך הארוכה־קצרה — סרט קצר על פרקים א׳–י״ז בתניא",
+  "scripts": {
+    "setup": "python3 tools/prepare_assets.py && python3 tools/sfx.py && node tools/scene-table.mjs && python3 tools/score.py",
+    "assets": "python3 tools/prepare_assets.py",
+    "score": "node tools/scene-table.mjs && python3 tools/score.py",
+    "table": "node tools/scene-table.mjs",
+    "studio": "remotion studio src/index.ts",
+    "still": "remotion still src/index.ts Film",
+    "render": "remotion render src/index.ts Film out/film.mp4 --crf=20",
+    "render:clean": "remotion render src/index.ts FilmClean out/film-clean.mp4 --crf=20",
+    "sync": "python3 tools/align_narration.py && node tools/sync-narration.mjs && node tools/scene-table.mjs && python3 tools/score.py",
+    "typecheck": "tsc -p .",
+    "sfx": "python3 tools/sfx.py"
+  },
+  "dependencies": {
+    "@fontsource/frank-ruhl-libre": "5.3.0",
+    "@fontsource/heebo": "5.3.0",
+    "@remotion/cli": "4.0.532",
+    "@remotion/media-utils": "4.0.532",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.532"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "typescript": "5.6.3"
+  }
+}

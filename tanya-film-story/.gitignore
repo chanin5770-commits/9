@@ -1,0 +1,12 @@
+node_modules/
+out/
+# נוצרים מחדש מ-source/ (npm run setup)
+public/panels/
+public/clips/
+public/audio/score-draft.wav
+# חומרים אישיים / כבדים — נשארים מקומית בלבד
+source/face-reference/
+source/*.pdf
+public/sfx/
+__pycache__/
+public/audio/narration.wav
