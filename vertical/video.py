@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from edit import (CARD_CHOOSE, CARD_END, CARD_LOGO, DURATION, FONTS, FPS, H, KITCHEN, LOGO,
+from edit import (CARD_CHOOSE, CARD_END, CARD_LOGO, CONTACT, DURATION, FONTS, FPS, H, KITCHEN, LOGO,
                   PHONE, PHOTOS, ROOT, SHOTS, TITLES, W, WORK)
 
 SRC_W, SRC_H = 1280, 720
@@ -143,6 +143,20 @@ def add_grain(x, i):
         g = np.random.default_rng(3)
         _grain = [g.normal(0, 1, (H, W, 1)).astype(np.float32) for _ in range(6)]
     return x + _grain[i % 6] * (0.010 * (1.0 - 0.5 * x.mean(axis=2, keepdims=True)))
+
+
+def decode_contact(n):
+    """The contact-card video, full frame (it is already 9:16), scaled to 1080x1920."""
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', CONTACT, '-an', '-vf',
+                          f'fps={FPS},scale={W}:{H}:flags=lanczos,format=rgb24',
+                          '-frames:v', str(n), '-f', 'rawvideo', '-'],
+                         check=True, capture_output=True).stdout
+    size = W * H * 3
+    frames = [np.frombuffer(raw[i:i + size], np.uint8).reshape(H, W, 3)
+              for i in range(0, len(raw) - size + 1, size)]
+    while len(frames) < n:
+        frames.append(frames[-1])
+    return frames
 
 
 def make_shade():
@@ -358,25 +372,7 @@ def card(kind, t):
         if t >= e['phone_at']:
             k = ease_out((t - e['phone_at']) / 0.35)
             centered(canvas, PHONE, font(900, 136), RED, 1300, k, (1 - k) * 24, direction='ltr')
-        if t >= e['cta_at']:
-            k = ease_out((t - e['cta_at']) / 0.35)
-            cta(canvas, 1462, k, (1 - k) * 20)
     return canvas
-
-
-def cta(canvas, cy, alpha, dy):
-    fnt = font(700, 56)
-    text = 'לתיאום וייעוץ — דברו איתנו'
-    tw = int(fnt.getlength(text, direction='rtl'))
-    pw, ph = tw + 110, 104
-    pill = Image.new('RGBA', (pw, ph), (0, 0, 0, 0))
-    d = ImageDraw.Draw(pill)
-    d.rounded_rectangle([0, 0, pw - 1, ph - 1], radius=ph // 2, fill=RED + (255,))
-    asc, desc = fnt.getmetrics()
-    d.text((pw / 2, ph / 2 + (asc - desc) / 2 - 2), text, font=fnt, fill=WHITE, anchor='ms', direction='rtl')
-    if alpha < 1:
-        pill.putalpha(pill.getchannel('A').point(lambda v: int(v * alpha)))
-    canvas.alpha_composite(pill, (round((W - pw) / 2), round(cy - ph / 2 + dy)))
 
 
 # ---------------------------------------------------------------- render
@@ -393,6 +389,8 @@ def render_frames(times=None):
             continue
         if shot['src'].startswith('CARD'):
             frames = None
+        elif shot['src'] == 'CONTACT':
+            frames = decode_contact(f1 - f0)
         elif shot['src'] == 'P':
             frames = load_photo(shot['img'])
         else:
@@ -401,6 +399,8 @@ def render_frames(times=None):
             t = i / FPS
             if frames is None:
                 canvas = card(shot['src'], t)
+            elif shot['src'] == 'CONTACT':      # shown as delivered: no crop, grade or grain
+                canvas = Image.fromarray(frames[i - f0]).convert('RGBA')
             else:
                 k = (i - f0) / max(1, f1 - f0 - 1)
                 src = frames if isinstance(frames, Image.Image) else frames[i - f0]

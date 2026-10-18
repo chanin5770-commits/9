@@ -13,11 +13,12 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 W, H, FPS = 1080, 1920, 30
 BPM = 120
-DURATION = 47.0
+DURATION = 47.5
 
 NARRATION = os.path.join(ROOT, 'assets', 'narration-v3.wav')
 KITCHEN = os.path.join(ROOT, 'footage', 'clip-d-kitchen-design.mp4')   # 30 fps, 1280x720
 WORK = os.path.join(ROOT, 'footage', 'clip-e-work-montage.mp4')         # 24 fps, 1280x720
+CONTACT = os.path.join(ROOT, 'footage', 'clip-c-contact-card.mp4')     # 24 fps, 478x850 (9:16): the closing contact card
 LOGO = os.path.join(ROOT, 'assets', 'logo-original.png')
 FONTS = os.path.join(ROOT, 'vertical', 'fonts')
 PHOTOS = os.path.join(ROOT, 'photos', 'yosef')
@@ -96,7 +97,8 @@ SHOTS = [
     dict(t=34.00, end=35.10, src='P', img='yosef-06-vest.jpg', cx=750, cy=1000, h=2000, z=0.90, dy=-60),            # בונים? (site vest)
     dict(t=35.10, end=36.20, src='W', a=0.38, b=0.75, cx=600, cy=300, h=590, z=0.95),         # משפצים?
     dict(t=36.20, end=39.00, src='P', img='yosef-01-home-panel.jpg', cx=640, cy=900, h=1250, z=0.88, dx=-30, dy=150),   # Yosef at work
-    dict(t=39.00, end=DURATION, src='CARD_END'),
+    dict(t=39.00, end=42.50, src='CARD_END'),
+    dict(t=42.50, end=DURATION, src='CONTACT'),                                                # the business's contact card video
 ]
 
 # On-screen titles. style: 'title' (lower third), 'kicker' (small),
@@ -104,21 +106,21 @@ SHOTS = [
 TITLES = [
     dict(t=0.70, end=2.00, text='בחרתם מטבח.', style='title'),
     dict(t=2.15, end=3.10, text='בחרתם ריצוף.', style='title'),
-    dict(t=3.60, end=5.50, text='כל פרט בבית.', style='title'),
+    dict(t=3.60, end=5.50, text='בחרתם כל פרט בבית.', style='title'),
     dict(t=6.10, end=9.50, text='אבל את מי בחרתם', style='q1'),
     dict(t=8.05, end=9.50, text='לחשמל?', style='q2'),
-    dict(t=11.60, end=13.70, text='תכנון שמתחיל בתשתית', style='kicker'),
-    dict(t=14.60, end=17.00, text='החלטות שתרגישו\nבכל יום.', style='title'),
-    dict(t=17.25, end=19.50, text='בדיוק איפה שצריך.', style='title'),
-    dict(t=19.70, end=21.50, text='תאורה שמתאימה לכם.', style='title'),
-    dict(t=21.75, end=25.50, text='חושבים גם על מחר.', style='title'),
+    dict(t=11.60, end=14.45, text='מאחורי הקירות,\nמתחת לרצפה,', style='title'),
+    dict(t=14.60, end=17.00, text='יש החלטות\nשתרגישו בכל יום.', style='title'),
+    dict(t=17.25, end=19.50, text='השקע בדיוק\nאיפה שצריך.', style='title'),
+    dict(t=19.70, end=21.50, text='התאורה שמתאימה\nלחלל.', style='title'),
+    dict(t=21.75, end=25.50, text='התשתית שמוכנה גם\nלמה שתצטרכו מחר.', style='title'),
     dict(t=26.75, end=27.35, text='תשתיות', style='service'),
     dict(t=27.38, end=28.70, text='לוחות חשמל', style='service'),
     dict(t=28.75, end=29.60, text='תאורה חכמה', style='service'),
     dict(t=29.67, end=30.90, text='עמדות טעינה', style='service'),
-    dict(t=31.00, end=34.00, text='לבתים', style='stack', row=0),
+    dict(t=31.00, end=34.00, text='לבתים,', style='stack', row=0),
     dict(t=31.76, end=34.00, text='לעסקים', style='stack', row=1),
-    dict(t=32.73, end=34.00, text='ולפרויקטים', style='stack', row=2),
+    dict(t=32.73, end=34.00, text='ולפרויקטים.', style='stack', row=2),
     dict(t=34.10, end=36.20, text='בונים?', style='stack', row=0),
     dict(t=35.20, end=36.20, text='משפצים?', style='stack', row=1),
     dict(t=36.40, end=39.00, text='בואו נתכנן את\nהחשמל שלכם נכון.', style='title'),
@@ -127,7 +129,7 @@ TITLES = [
 # Brand cards: when each element enters.
 CARD_CHOOSE = dict(text_at=9.50, logo_at=10.00)
 CARD_LOGO = dict(logo_at=25.50)
-CARD_END = dict(logo_at=39.00, slogan_at=40.55, phone_at=41.20, cta_at=41.70)
+CARD_END = dict(logo_at=39.00, slogan_at=40.55, phone_at=41.40)
 
 # Sound design cues the score is built around.
 CUES = dict(
@@ -139,7 +141,7 @@ CUES = dict(
     brand=25.50,             # the drop on "חשמלי."
     call=34.00,              # "בונים? משפצים?": leaner beat
     end=39.00,               # sonic logo, end card
-    signature=41.60,         # closing brand signature after the last line
+    signature=42.50,         # closing brand signature as the contact card appears
     plug=17.35,              # plug seats in the socket
     # dramatic silences right before key moments: everything cuts out, then the hit
     silences=[(5.30, 5.50), (9.22, 9.50), (25.22, 25.50), (38.72, 39.00)],
