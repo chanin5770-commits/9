@@ -8,3 +8,4 @@ public/audio/score-draft.wav
 source/face-reference/
 source/*.pdf
 public/sfx/
+__pycache__/
