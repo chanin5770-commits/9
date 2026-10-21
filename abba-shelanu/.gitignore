@@ -1,0 +1,5 @@
+# family photos, the song and exported films stay on this computer only
+projects/
+dist-ui/
+node_modules/
+test-data/
