@@ -1,0 +1,13 @@
+{
+  "name": "shrir-film",
+  "private": true,
+  "description": "״שריר שצריך לאמן״ — vertical film renderer",
+  "scripts": {
+    "timeline": "python3 tools/build_timeline.py",
+    "audio": "python3 tools/score.py",
+    "render": "node tools/render.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

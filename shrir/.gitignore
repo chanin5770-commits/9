@@ -1,0 +1,5 @@
+node_modules/
+build/*.wav
+build/*.mp4
+build/*.log
+dist/stills/

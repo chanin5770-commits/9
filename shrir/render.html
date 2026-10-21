@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>שריר שצריך לאמן — render</title>
+<link rel="stylesheet" href="src/fonts.css">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="src/film.js"></script>
+<script>
+  // Hooks driven by tools/render.cjs
+  const ctx = document.getElementById('c').getContext('2d');
+  window.__init = async (timeline, images) => {
+    await Promise.all([
+      document.fonts.load("600 54px 'Assistant'", 'אבג'), document.fonts.load("500 62px 'Frank Ruhl Libre'", 'אבג'),
+      document.fonts.load("600 80px 'Frank Ruhl Libre'", 'אבג'), document.fonts.load("500 44px 'Assistant'", 'אבג'),
+    ]);
+    await FILM.load(timeline, images);
+    return document.fonts.check("600 54px 'Assistant'", 'אבג');
+  };
+  window.__frame = (t, opts, type) => { FILM.draw(ctx, t, opts); return ctx.canvas.toDataURL(type || 'image/jpeg', 0.95); };
+</script>
+</body>
+</html>
