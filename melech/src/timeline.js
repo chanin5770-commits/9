@@ -65,8 +65,9 @@ const SHOTS = [
   { start: 61.4, end: L.v2[0], clip: 'grand-staircase', from: 3.3, cam: [{ zoom: 1.12, fx: 0.62, fy: 0.5 }, { zoom: 1.04 }] },
 
   // ---- Verse 2
-  // "אותיות התורה הן אור יקר" — the Torah in a beautiful holy ark, soft light.
-  { start: L.v2[0], end: L.v2[1], scene: 'ark', fade: 0.4 },
+  // "אותיות התורה הן אור יקר" — at his desk with the letters, in soft golden light.
+  { start: L.v2[0], end: L.v2[1], clip: 'desk-aleph', from: 4.2, fade: 0.4, cam: [{ zoom: 1.12, fx: 0.45, fy: 0.45 }, { zoom: 1.04 }],
+    fx: [{ type: 'wash', at: L.v2[0] + 0.3, rise: 2, x: 1300, y: 380, alpha: 0.35 }, { type: 'sparkles', n: 40, seed: 13 }] },
   // "כל יום מגלים אוצר נהדר" — opening the book and discovering letters.
   { start: L.v2[1], end: L.v2[2], clip: 'library-book-burst', from: 0, cam: [{ zoom: 1.04, fx: 0.45 }, { zoom: 1.12, fx: 0.55 }], fx: [{ type: 'sparkles', n: 40, seed: 5 }] },
   // "לומדים באהבה, לומדים בשמחה" — running joyfully over the pages.
