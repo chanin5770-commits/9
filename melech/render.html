@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>מלך האותיות — render</title>
+<link rel="stylesheet" href="src/fonts.css">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="src/engine.js"></script>
+<script src="src/scenes.js"></script>
+<script src="src/beats.js"></script>
+<script src="src/timeline.js"></script>
+<script src="src/compose.js"></script>
+<script>
+  // Hooks driven by tools/render.cjs
+  const cv = document.getElementById('c');
+  const cx2d = cv.getContext('2d');
+  window.__ready = (async () => {
+    const fams = ['900 40px "Frank Ruhl Libre"', '400 40px "Secular One"', '800 40px "Rubik"'];
+    await Promise.all(fams.map((f) => document.fonts.load(f, 'אבג ChaniLi')));
+    return DURATION;
+  })();
+  window.__frame = async (t, type = 'image/jpeg', q = 0.93) => { await frame(cx2d, t); return cv.toDataURL(type, q); };
+</script>
+</body>
+</html>

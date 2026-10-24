@@ -1,0 +1,7 @@
+/* Hebrew fonts (SIL Open Font License), bundled so every letter is drawn from real
+ * font outlines and renders offline. */
+@font-face { font-family: 'Frank Ruhl Libre'; font-weight: 900; font-display: block; src: url(../assets/fonts/frank-ruhl-900-hebrew.woff2) format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family: 'Secular One'; font-weight: 400; font-display: block; src: url(../assets/fonts/secular-one-hebrew.woff2) format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family: 'Secular One'; font-weight: 400; font-display: block; src: url(../assets/fonts/secular-one-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Rubik'; font-weight: 800; font-display: block; src: url(../assets/fonts/rubik-800-hebrew.woff2) format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family: 'Rubik'; font-weight: 800; font-display: block; src: url(../assets/fonts/rubik-800-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
