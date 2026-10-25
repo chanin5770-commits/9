@@ -3,7 +3,8 @@
  * the time it is given, so any frame can be rendered on its own. */
 'use strict';
 
-const W = 1920, H = 1080;
+// Frame size: landscape 1920×1080 unless the page sets window.FRAME (e.g. the 9:16 teaser).
+const W = (window.FRAME || {}).w || 1920, H = (window.FRAME || {}).h || 1080;
 const ALEFBET = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ', 'ק', 'ר', 'ש', 'ת'];
 const LETTER_FONT = '"Frank Ruhl Libre"';
 const TITLE_FONT = '"Secular One"';
@@ -77,7 +78,9 @@ function drawClip(ctx, clip, ct, cam = {}, alpha = 1) {
   const z = cam.zoom || 1;
   const f = clamp(ct, 0, (CLIP_FRAMES - 1) / CLIP_FPS) * CLIP_FPS + 1;
   const i0 = Math.floor(f), frac = f - i0;
-  const dw = W * z, dh = H * z;
+  // Cover-fit the 16:9 footage to the frame (identity for a 1920×1080 frame).
+  const cover = Math.max(W / 1920, H / 1080) * z;
+  const dw = 1920 * cover, dh = 1080 * cover;
   const fx = cam.fx == null ? 0.5 : cam.fx, fy = cam.fy == null ? 0.5 : cam.fy;
   const x = clamp(W / 2 - fx * dw, W - dw, 0), y = clamp(H / 2 - fy * dh, H - dh, 0);
   const a = Frames.get(clip, i0), b = frac > 0.05 ? Frames.get(clip, i0 + 1) : null;

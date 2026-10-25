@@ -100,7 +100,8 @@ function renderFrame(ctx, t) {
   vignette(ctx, 0.22);
   // Fade in from and out to cream at the very start and end.
   fill(ctx, '#fffaf0', 1 - prog(t, 0, 0.6));
-  fill(ctx, '#fffaf0', prog(t, DURATION - 1.6, DURATION));
+  const endFade = typeof END_FADE === 'number' ? END_FADE : 1.6;
+  if (endFade > 0) fill(ctx, '#fffaf0', prog(t, DURATION - endFade, DURATION));
 }
 
 // Renders a frame, fetching any footage frames it needs first.

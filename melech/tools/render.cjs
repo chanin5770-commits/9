@@ -6,6 +6,7 @@
  *   node tools/render.cjs --workers 4             (parallel pages, default 3)
  *   node tools/render.cjs --from 38 --to 52 --out dist/part.mp4   (a section only)
  *   node tools/render.cjs --stills 3,40.1,170 --stills-dir dist/stills
+ *   node tools/render.cjs --page teaser.html --audio assets/teaser-music.wav --out dist/teaser.mp4
  *
  * Run tools/extract-frames.sh once first: it unpacks the footage into build/frames.
  */
@@ -26,9 +27,10 @@ const WORKERS = Number(opt('workers', 3));
 const OUT = path.resolve(root, opt('out', 'dist/melech-haotiyot.mp4'));
 const STILLS = opt('stills', null);
 const STILLS_DIR = path.resolve(root, opt('stills-dir', 'dist/stills'));
-const SONG = path.join(root, 'assets/song.mp3');
+const PAGE = opt('page', 'render.html');
+const SONG = path.join(root, opt('audio', 'assets/song.mp3'));
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.wav': 'audio/wav' };
 
 function serve() {
   return new Promise((resolve) => {
@@ -71,7 +73,7 @@ async function renderRange(browser, url, f0, f1, file, progress) {
 
 (async () => {
   const server = await serve();
-  const url = `http://127.0.0.1:${server.address().port}/render.html`;
+  const url = `http://127.0.0.1:${server.address().port}/${PAGE}`;
   const browser = await chromium.launch();
 
   if (STILLS) {
