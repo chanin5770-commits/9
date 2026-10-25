@@ -1,20 +1,13 @@
-/* The 15-second vertical (9:16) launch teaser for the "מלך ומלכת האותיות" kit.
- * A separate film from the clip and the first teaser: it brings the King and the
- * Queen of the Letters together (their original footage), gives a short look at the
- * real kit (cover, giant cards and game covers, as supplied), and ends on
- * "בקרוב...". Every Hebrew word and letter is set in a real font.
- * Soundtrack: assets/launch-music.wav (tools/make_music.py), the instrumental break
- * of the Queen's song at 147 BPM. */
+/* Shared pieces of the "מלך ומלכת האותיות" launch teasers (15 s and 50 s): palette,
+ * kit images, arch windows into the King's and Queen's footage, and the scenes.
+ * Each teaser file sets DURATION and SHOTS. Every Hebrew word and letter is set in
+ * a real font. The music (147 BPM) is the instrumental break of the Queen's song. */
 'use strict';
 
-const DURATION = 15;
 const END_FADE = 0; // the end card holds to the last frame
-
 // One bar of the music is 4 beats of 0.408 s.
 const BEAT = 60 / 146.95, BAR = BEAT * 4;
 const bar = (n) => n * BAR;
-const STOP = bar(7), CHIME = 12.25;
-setBeats(Array.from({ length: 28 }, (_, i) => i * BEAT));
 
 const PINK = '#f4d3d8', CREAM = '#fff6e9', SKY = '#cfe8f7', PLUM = '#4a2c4a', ROSE = '#9b3b6a';
 FACES.rose = { stops: ['#fff2f6', '#ffbfd1', '#e0708f', '#a83a62'], side: '#6e1f40', rim: '#fff4f8', glow: 'rgba(255,160,190,' };
@@ -22,7 +15,7 @@ const ARC_FACES = ['gold', 'sky', 'rose', 'gold'];
 
 // Kit pages and covers, cropped from the supplied images (assets/kit).
 const KIT = {};
-['cover', 'card-aleph', 'card-bet', 'lotto', 'memory', 'bingo', 'kings', 'queens'].forEach((k) => {
+['cover', 'card-aleph', 'card-bet', 'lotto', 'memory', 'kings', 'queens'].forEach((k) => {
   const img = new Image();
   img.src = 'assets/kit/' + k + '.jpg';
   KIT[k] = img;
@@ -134,7 +127,7 @@ function POST(ctx) {
 
 // ---------------------------------------------------------------- scenes
 
-// 0–3.27: something magical wakes up: a crown, golden letters on the beat, the line.
+// Opening: something magical wakes up: a crown, golden letters on the beat, the line.
 const AWAKE = [
   { ch: 'א', x: 0, y: -60, s: 420, t: BEAT },
   { ch: 'ב', x: -330, y: -330, s: 170, t: BEAT * 2, face: 'sky' },
@@ -167,20 +160,21 @@ SCENES.lAwaken = (ctx, lt, s, t) => {
   });
   ctx.restore();
   crown(ctx, W / 2, 380 + (1 - ease.out(prog(t, 0.2, 1.0))) * -60, 140, '#ffd54f');
-  goldText(ctx, 'משהו קסום מתעורר', W / 2, 1300, 96, prog(t, BEAT * 3, BEAT * 3 + 0.45));
-  goldText(ctx, 'בעולם האותיות...', W / 2, 1430, 96, prog(t, BEAT * 5, BEAT * 5 + 0.45), { face: 'rose' });
+  const [t1, t2] = s.text || [BEAT * 3, BEAT * 5];
+  goldText(ctx, 'משהו קסום מתעורר', W / 2, 1300, 96, prog(t, t1, t1 + 0.45));
+  goldText(ctx, 'בעולם האותיות...', W / 2, 1430, 96, prog(t, t2, t2 + 0.45), { face: 'rose' });
   // Light blooms into the first window.
   glowSpot(ctx, W / 2, 860, 1300, 'rgba(255,246,225,A)', 0.9 * ease.in(prog(lt, dur - 0.45, dur)));
 };
 
-// 3.27–6.53: the King, then the Queen, each through an arch window, named.
+// The King or the Queen through an arch window, named (s.name is optional).
 SCENES.lSolo = (ctx, lt, s, t) => {
   const dur = s.end - s.start;
   dreamBG(ctx, t, s.tint);
   rays(ctx, W / 2, 820, t, { alpha: 0.1, n: 16, spin: 0.05, len: 1300 });
   sparkles(ctx, t, { n: 45, seed: s.seed, alpha: 0.75 });
   archWindow(ctx, t, lt, dur, Object.assign({ cx: W / 2, cy: 880, w: 740, ratio: 1.58, crown: 120 }, s.win));
-  goldText(ctx, s.name, W / 2, 1565, 112, prog(lt, 0.15, 0.6), { face: s.face });
+  if (s.name) goldText(ctx, s.name, W / 2, 1565, 112, prog(lt, 0.15, 0.6), { face: s.face });
   // Letters lighting up on the beat beside the window.
   (s.pops || []).forEach((pp, i) => {
     const tt = s.start + pp.b * BEAT, kk = prog(t, tt - 0.1, tt + 0.3);
@@ -190,7 +184,7 @@ SCENES.lSolo = (ctx, lt, s, t) => {
   });
 };
 
-// 6.53–8.17: King and Queen side by side; boys, girls and mixed kindergartens.
+// King and Queen side by side, with a line of words landing one per beat.
 SCENES.lDuo = (ctx, lt, s, t) => {
   const dur = s.end - s.start;
   dreamBG(ctx, t);
@@ -198,22 +192,22 @@ SCENES.lDuo = (ctx, lt, s, t) => {
   sparkles(ctx, t, { n: 55, seed: 84, alpha: 0.8 });
   const common = { cy: 820, w: 400, ratio: 1.62, crown: 96, rim: 12 };
   // Right to left: the King first.
-  archWindow(ctx, t, lt, dur, Object.assign({}, common, { cx: W / 2 + 228, clip: 'hall-pointing', from: 6.0, tint: 'rgba(190,220,250,0.3)', cam: [{ zoom: 1.0, fx: 0.47 }, { zoom: 1.08, fx: 0.48 }] }));
-  archWindow(ctx, t, Math.max(0, lt - 0.12), dur, Object.assign({}, common, { cx: W / 2 - 228, clip: 'first-letter', from: 0.3, tint: 'rgba(244,200,212,0.3)', cam: [{ zoom: 1.0, fx: 0.3 }, { zoom: 1.08, fx: 0.31 }] }));
+  archWindow(ctx, t, lt, dur, Object.assign({}, common, { cx: W / 2 + 228, tint: 'rgba(190,220,250,0.3)' }, s.king));
+  archWindow(ctx, t, Math.max(0, lt - 0.12), dur, Object.assign({}, common, { cx: W / 2 - 228, tint: 'rgba(244,200,212,0.3)' }, s.queen));
   goldText(ctx, 'מלך האותיות', W / 2 + 228, 1240, 64, prog(lt, 0.1, 0.5), { face: 'sky' });
   goldText(ctx, 'מלכת האותיות', W / 2 - 228, 1240, 64, prog(lt, 0.22, 0.62), { face: 'rose' });
   // One word per beat, right to left.
-  [['בנים', 'sky', 360], ['בנות', 'rose', 150], ['גנים מעורבים', 'gold', -235]].forEach(([w, face, dx], i) => {
+  s.words.forEach(([w, face, dx], i) => {
     const tt = s.start + (i + 1) * BEAT;
     goldText(ctx, w, W / 2 + dx, 1440, 82, prog(t, tt - 0.05, tt + 0.35), { face, flash: Math.max(0, 1 - (t - tt) / 0.3) * 0.5 });
   });
-  for (const x of [W / 2 + 255, W / 2 + 35]) {
+  for (const x of s.dots.map((d) => W / 2 + d)) {
     const k = prog(t, s.start + 1.5 * BEAT, s.start + 2 * BEAT);
     if (k > 0) { ctx.save(); ctx.globalAlpha = k; ctx.fillStyle = '#d9a93e'; ctx.beginPath(); ctx.arc(x, 1442, 9, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
   }
 };
 
-// 8.17–11.43: a look at the real kit, one piece landing on each beat.
+// A look at the real kit, one piece landing on each beat.
 const KIT_LAYOUT = [
   // [image, x, y, width, beat, rotation, blur]  (back to front)
   ['card-bet', 250, 760, 330, 1, -0.16, 1.5],
@@ -252,7 +246,7 @@ SCENES.lKit = (ctx, lt, s, t) => {
   glowSpot(ctx, W / 2, 900, 1400, 'rgba(255,246,225,A)', 0.95 * ease.in(prog(lt, dur - 0.3, dur)));
 };
 
-// 11.43–15: the alef-bet arch, the lines, "בקרוב..." on the chime, the studio.
+// End card: the alef-bet arch, the lines, "בקרוב..." on the chime, the studio.
 SCENES.lEnd = (ctx, lt, s, t) => {
   dreamBG(ctx, t);
   rays(ctx, W / 2, 700, t, { alpha: 0.12, n: 18, spin: 0.04, len: 1300 });
@@ -262,7 +256,7 @@ SCENES.lEnd = (ctx, lt, s, t) => {
     const th = lerp(0.12, Math.PI - 0.12, i / 21);
     const tx = W / 2 + Math.cos(th) * 440, ty = 860 - Math.sin(th) * 440;
     const k = clamp(settle * 1.6 - (i / 21) * 0.6), e = ease.out(k);
-    const x = lerp(W / 2 + (hash(i * 3) - 0.5) * 900, tx, e), y = lerp(H + 150, ty, e) - (t < STOP ? beatPulse(t - i * 0.025) * 14 : 0);
+    const x = lerp(W / 2 + (hash(i * 3) - 0.5) * 900, tx, e), y = lerp(H + 150, ty, e) - (t < s.stop ? beatPulse(t - i * 0.025) * 14 : 0);
     letter3D(ctx, ALEFBET[i], x, y, 80 * (0.6 + 0.4 * e), { face: ARC_FACES[i % 4], alpha: clamp(k * 4), rotY: (1 - e) * 1.1 + Math.sin(t * 2 + i) * 0.12, glow: 0.55 });
   }
   glowSpot(ctx, W / 2, 1000, 700, 'rgba(255,236,190,A)', 0.35);
@@ -270,6 +264,7 @@ SCENES.lEnd = (ctx, lt, s, t) => {
   goldText(ctx, '22 אותיות. שנה שלמה.', W / 2, 960, 84, prog(t, s.lines[0], s.lines[0] + 0.45));
   goldText(ctx, 'אינסוף חוויות חסידיות!', W / 2, 1080, 84, prog(t, s.lines[1], s.lines[1] + 0.45));
   // "בקרוב" lands on the chime; the three dots follow, to its left (RTL).
+  const CHIME = s.chime;
   const kb = prog(t, CHIME - 0.04, CHIME + 0.3);
   if (kb > 0) {
     const size = 150;
@@ -299,15 +294,60 @@ SCENES.lEnd = (ctx, lt, s, t) => {
   }
 };
 
-const SHOTS = [
-  { start: 0, end: bar(2), scene: 'lAwaken' },
-  { start: bar(2), end: bar(3), scene: 'lSolo', flash: 0.4, tint: 'sky', seed: 82, name: 'מלך האותיות', face: 'sky',
-    win: { clip: 'desk-aleph', from: 4.3, speed: 0.9, tint: 'rgba(190,220,250,0.3)', cam: [{ zoom: 1.0, fx: 0.33 }, { zoom: 1.1, fx: 0.36 }] },
-    pops: [{ ch: 'א', x: 110, y: 1400, b: 1 }, { ch: 'ב', x: 970, y: 1400, b: 2, face: 'sky' }] },
-  { start: bar(3), end: bar(4), scene: 'lSolo', fade: 0.2, tint: 'pink', seed: 83, name: 'מלכת האותיות', face: 'rose',
-    win: { clip: 'letter-hall', from: 5.9, speed: 0.95, tint: 'rgba(244,200,212,0.3)', cam: [{ zoom: 1.0, fx: 0.5 }, { zoom: 1.1, fx: 0.55 }] },
-    pops: [{ ch: 'ג', x: 970, y: 1400, b: 1, face: 'rose' }, { ch: 'ד', x: 110, y: 1400, b: 2 }] },
-  { start: bar(4), end: bar(5), scene: 'lDuo', fade: 0.2 },
-  { start: bar(5), end: STOP, scene: 'lKit', flash: 0.35 },
-  { start: STOP, end: DURATION, scene: 'lEnd', flash: 0.5, lines: [STOP + 0.3, STOP + 0.3 + BEAT], studio: 12.75 },
-];
+
+// The golden gate of the kingdom: the camera glides towards it, the doors open and
+// the light floods the frame.
+SCENES.lGate = (ctx, lt, s, t) => {
+  const dur = s.end - s.start;
+  skyBG(ctx, t, { top: '#f2c9d2', mid: '#fbe6ea', bottom: CREAM, sunY: 900, cloudY: 0.78 });
+  const push = 1 + 0.75 * ease.in(clamp(lt / dur));
+  ctx.save();
+  ctx.translate(W / 2, 1000); ctx.scale(push * 1.3, push * 1.3); ctx.translate(-W / 2, -1000 + 440);
+  drawGate(ctx, ease.inOut(prog(lt, s.open, dur - 0.2)), t);
+  ctx.restore();
+  // Powder-pink tint over the stonework.
+  ctx.save(); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = 'rgba(244,190,205,0.45)'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  rays(ctx, W / 2, 1000, t, { alpha: 0.06 + 0.25 * prog(lt, s.open - 0.6, dur), n: 16, spin: 0.05, len: 1600 });
+  // Light pulsing through the gap before the doors open.
+  glowSpot(ctx, W / 2, 1000, 260 + 60 * beatPulse(t, 0.3), 'rgba(255,248,220,A)', 0.3 * (1 - prog(lt, s.open, s.open + 0.6)));
+  // Golden letters drifting past the camera on both sides.
+  for (let i = 0; i < 10; i++) {
+    const k = ((lt / 3.4 + i / 10) % 1);
+    const z = lerp(6, 0.8, ease.in(k));
+    const side = i % 2 ? -1 : 1;
+    letter3D(ctx, ALEFBET[(i * 5 + 3) % 22], W / 2 + side * (520 + 80 * hash(i)) / z * 1.2, 1000 + (hash(i * 3) - 0.5) * 900 / z, 260 / z,
+      { face: ARC_FACES[i % 4], alpha: clamp(k * 5) * clamp((1 - k) * 6), glow: 0.6, rotY: side * 0.4 });
+  }
+  sparkles(ctx, t, { n: 45, seed: 87, alpha: 0.8 });
+  glowSpot(ctx, W / 2, 1000, 1300, 'rgba(255,246,225,A)', 0.95 * ease.in(prog(lt, dur - 0.8, dur)));
+  fill(ctx, CREAM, ease.in(prog(lt, dur - 0.25, dur)));
+};
+
+// The two of them under one crown, with the name in big golden letters.
+SCENES.lTitle = (ctx, lt, s, t) => {
+  const dur = s.end - s.start;
+  dreamBG(ctx, t);
+  rays(ctx, W / 2, 760, t, { alpha: 0.2, n: 22, spin: 0.06, len: 1500 });
+  sparkles(ctx, t, { n: 80, seed: 88, alpha: 0.95 });
+  const common = { cy: 700, w: 360, ratio: 1.5, crown: 0, rim: 12 };
+  archWindow(ctx, t, lt, dur, Object.assign({}, common, { cx: W / 2 + 205, tint: 'rgba(190,220,250,0.3)' }, s.king));
+  archWindow(ctx, t, lt, dur, Object.assign({}, common, { cx: W / 2 - 205, tint: 'rgba(244,200,212,0.3)' }, s.queen));
+  crown(ctx, W / 2, 330, 190 * ease.back(prog(lt, 0.1, 0.6)), '#ffd54f');
+  goldText(ctx, 'מלך ומלכת', W / 2, 1190, 150, prog(lt, BEAT * 2, BEAT * 2 + 0.45), { face: 'gold', flash: Math.max(0, 1 - (lt - BEAT * 2) / 0.3) * 0.6 });
+  goldText(ctx, 'האותיות', W / 2, 1370, 170, prog(lt, BEAT * 4, BEAT * 4 + 0.45), { face: 'rose', flash: Math.max(0, 1 - (lt - BEAT * 4) / 0.3) * 0.6 });
+  burst(ctx, t, s.start + BEAT * 4, W / 2, 1370, { radius: 560, n: 40, seed: 12, dur: 1.2 });
+  OVERLAYS_RISE(ctx, t, s);
+  glowSpot(ctx, W / 2, 1000, 1300, 'rgba(255,246,225,A)', 0.9 * ease.in(prog(lt, dur - 0.3, dur)));
+};
+
+// Real-font letters floating up from the bottom of the frame.
+function OVERLAYS_RISE(ctx, t, s) {
+  for (let i = 0; i < 14; i++) {
+    const born = s.start + i * 0.22, k = (t - born) / 2.4;
+    if (k < 0 || k > 1) continue;
+    // Kept to the sides so they never cross the name.
+    const side = i % 2 ? 1 : -1;
+    const x = W / 2 + side * (420 + 80 * hash(i * 13)) + Math.sin(t * 2 + i) * 15, y = 1700 - 900 * ease.out(k);
+    letter3D(ctx, ALEFBET[(i * 5) % 22], x, y, 110 * (0.4 + 0.6 * ease.back(clamp(k * 3))), { face: ARC_FACES[i % 4], alpha: clamp(k * 6) * clamp((1 - k) * 4), rotY: Math.sin(t * 2.5 + i) * 0.5, glow: 0.7 });
+  }
+}
