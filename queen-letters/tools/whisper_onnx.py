@@ -38,7 +38,7 @@ def main(path, mdir, lang="he"):
     segs, start = [], 0.0
     while start < len(audio) / SR - 0.5:
         a = audio[int(start * SR):int((start + CHUNK) * SR)]
-        a = np.pad(a, (0, CHUNK * SR - len(a)))
+        a = np.pad(a[:CHUNK * SR], (0, CHUNK * SR - len(a[:CHUNK * SR])))
         mel = log_mel(a, n_mels)[None, :, :3000]
         ck, cv = enc.run(None, {"mel": mel})
         kc = np.zeros((n_layer, 1, 448, n_state), np.float32); vc = np.zeros_like(kc)
