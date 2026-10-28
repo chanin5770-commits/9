@@ -33,11 +33,18 @@ ORIG = os.path.join(SRC, 'kit-summary-50s.mp4')
 REC = os.path.join(SRC, 'site-scroll-recording.mp4')
 SHOTS_IMG = {   # tall site screenshots: file, top crop (status bar), bottom limit
     'alef': ('site-letters.jpg', 112, 4560),
-    'mail': ('site-mail.jpg', 112, 5420),
     'home': ('site-home.jpg', 112, 3260),
     'songs': ('site-songs.webp', 112, 8370),
     'letter': ('site-letter-alef.jpg', 112, 2190),
     'builder': ('site-booklet-builder.jpg', 112, 2190),
+    'mailtop': ('site-mail-header.jpg', 112, 4721),
+}
+POSTERS = {
+    'price': 'poster-price.png',
+    'buy': 'poster-how-to-buy.png',
+    'worksheets': 'poster-worksheets.png',
+    'games': 'poster-games.png',
+    'kit': 'poster-kit.png',
 }
 REC_CROP = (0, 0, 1080, 1625)     # source is pre-cropped below the notification banner, above the nav bar
 
@@ -223,6 +230,64 @@ def badge(c, t, t0, txt, y):
     place(c, pill, W / 2, y, scale=0.8 + 0.2 * ease_back(p), alpha=ease_out(p))
 
 
+# ------------------------------------------------------------------ posters
+PW = 1012                  # poster width on screen (the posters are 2:3)
+PHH = round(PW * 1.5)
+
+
+@lru_cache(maxsize=None)
+def poster(key):
+    return Image.open(os.path.join(SRC, POSTERS[key])).convert('RGB').resize((PW, PHH), Image.LANCZOS)
+
+
+@lru_cache(maxsize=None)
+def poster_backdrop(key):
+    """The poster itself, blown up and blurred, behind the sharp copy."""
+    im = poster(key)
+    k = H / im.height * 1.08
+    big = im.resize((round(im.width * k), round(im.height * k)), Image.BILINEAR)
+    x, y = (big.width - W) // 2, (big.height - H) // 2
+    big = big.crop((x, y, x + W, y + H)).filter(ImageFilter.GaussianBlur(28))
+    return Image.blend(big, Image.new('RGB', (W, H), (255, 246, 240)), 0.35).convert('RGBA')
+
+
+@lru_cache(maxsize=None)
+def poster_frame():
+    pad = 50
+    im = Image.new('RGBA', (PW + 2 * pad, PHH + 2 * pad), (0, 0, 0, 0))
+    m = Image.new('L', im.size, 0)
+    ImageDraw.Draw(m).rounded_rectangle((pad, pad + 14, pad + PW, pad + PHH + 14), 30, fill=130)
+    sh = Image.new('RGBA', im.size, (110, 40, 70, 0))
+    sh.putalpha(m.filter(ImageFilter.GaussianBlur(22)))
+    im.alpha_composite(sh)
+    return im
+
+
+@lru_cache(maxsize=None)
+def poster_mask():
+    m = Image.new('L', (PW, PHH), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, PW - 1, PHH - 1), 28, fill=255)
+    return m
+
+
+def poster_scene(key, t, zoom=1.0, focus=(0.5, 0.5), scale=1.0, cy=H / 2):
+    """The poster, untouched, framed on its own blurred backdrop; `zoom` pushes in on `focus`."""
+    c = poster_backdrop(key).copy()
+    im = poster(key)
+    if zoom > 1.001:
+        w, h = PW / zoom, PHH / zoom
+        x = min(PW - w, max(0, PW * focus[0] - w / 2))
+        y = min(PHH - h, max(0, PHH * focus[1] - h / 2))
+        im = im.crop((x, y, x + w, y + h)).resize((PW, PHH), Image.BICUBIC)
+    fr = poster_frame()
+    card = fr.copy()
+    card.paste(im, (50, 50), poster_mask())
+    d = ImageDraw.Draw(card)
+    d.rounded_rectangle((50, 50, 50 + PW - 1, 50 + PHH - 1), 28, outline=(226, 182, 96, 255), width=4)
+    place(c, card, W / 2, cy, scale=scale)
+    return c
+
+
 # ------------------------------------------------------------------ the shot list
 SHOTS = []
 
@@ -354,19 +419,18 @@ def s_books(t, d):
     return c
 
 
-# 8 — the original letter worksheets
-clip('o_sheets', ORIG, 26.0, 29.6, beat(62) - beat(56))
-
-
+# 8 — the worksheets poster
 @shot(56, 62, 'page')
 def s_sheets(t, d):
-    c = film_frame('o_sheets', t, (1.0, 1.05), d, (0.5, 0.55))
+    c = poster_scene('worksheets', t, zoom=1.0 + 0.08 * ease_in_out(t / d), focus=(0.5, 0.45))
+    light_sweep(c, prog(t, 0.5, 1.3), strength=0.25)
+    twinkles(c, t, seed=16, n=12, strength=0.7)
     return c
 
 
 # 9 — the real screen recording: "mail from the kingdom"
-clip('r_mailhero', REC, 1.95, 2.75, 0.8, 'rec')
-clip('r_mail', REC, 11.3, 15.3, beat(74) - beat(62) - 0.8, 'rec')
+MAILTOP = 1.2
+clip('r_mail', REC, 11.3, 15.3, beat(74) - beat(62) - MAILTOP, 'rec')
 
 
 @shot(62, 74, 'flash')
@@ -374,7 +438,7 @@ def s_mail(t, d):
     c = brand_scene(t)
     headline(c, t, 0.1, 'דואר מהממלכה', 210, size=104)
     caption(c, t, 0.3, 'הודעות מעוצבות, פתקים וברכות להורי הגן', 318, size=44)
-    scr = footage('r_mailhero', t) if t < 0.8 else footage('r_mail', t - 0.8)
+    scr = scroll('mailtop', t, [(0, 0), (0.35, 0), (MAILTOP, 520)]) if t < MAILTOP else footage('r_mail', t - MAILTOP)
     phone_in(c, t, scr, cy=1070, t_in=0.0)
     badge(c, t, 0.6, 'הצצה אמיתית לאתר', 1690)
     return c
@@ -440,17 +504,11 @@ def s_home(t, d):
     return c
 
 
-# 13 — real site: build your own booklet
+# 13 — the games poster
 @shot(101, 108, 'zoom')
-def s_builder(t, d):
-    c = brand_scene(t)
-    headline(c, t, 0.1, 'בונות חוברת אישית', 205, size=92)
-    headline(c, t, 0.3, 'ומדפיסות!', 315, size=100, fill='gold', stroke=3)
-    scr = scroll('builder', t, [(0, 0), (0.4, 0), (1.8, 440)])
-    phone_in(c, t, scr, cy=1060, rise=False)
-    # the "make me a booklet" button, left half of the builder card
-    yb = (1385 - 112 - 440) * SW / 1080
-    ripple(c, t, 1.95, W / 2 - SW / 2 + 290 * SW / 1080, 1060 - SH / 2 + yb)
+def s_games(t, d):
+    c = poster_scene('games', t, zoom=1.0 + 0.07 * ease_in_out(t / d), focus=(0.5, 0.42))
+    twinkles(c, t, seed=17, n=14, strength=0.8)
     return c
 
 
@@ -476,237 +534,35 @@ def s_triad(t, d):
     return c
 
 
-# 15 — the climax: launch price
-@lru_cache(maxsize=None)
-def rays():
-    n = 2400
-    yy, xx = np.mgrid[0:n, 0:n] - n / 2
-    ang = np.arctan2(yy, xx)
-    r = np.sqrt(xx * xx + yy * yy) / (n / 2)
-    a = (0.5 + 0.5 * np.cos(ang * 18)) ** 6 * np.clip(1 - r, 0, 1) ** 0.8 * 0.33
-    img = np.dstack([np.full((n, n), 255), np.full((n, n), 222), np.full((n, n), 150), a * 255]).astype(np.uint8)
-    return Image.fromarray(img, 'RGBA')
-
-
-def climax_bg(t, cy=1000):
-    c = brand_bg().copy()
-    r = rays().rotate(t * 6, resample=Image.BILINEAR)
-    place(c, r, W / 2, cy)
-    floating_letters(c, t, seed=21, n=10, alpha=0.16)
-    dust(c, t, seed=22, n=26, strength=0.7)
-    return c
-
-
-@lru_cache(maxsize=None)
-def ribbon(txt):
-    im = text_img(txt, 'display', 70, fill='cream', shadow=0.3)
-    w, h = im.width + 150, 118
-    rb = Image.new('RGBA', (w + 80, h + 30), (0, 0, 0, 0))
-    d = ImageDraw.Draw(rb)
-    # tails
-    for side in (0, 1):
-        x = 0 if side == 0 else w + 80
-        sgn = 1 if side == 0 else -1
-        d.polygon([(x, 30), (x + sgn * 70, 30), (x + sgn * 70, h + 30), (x, h + 30), (x + sgn * 30, h / 2 + 30)],
-                  fill=(150, 52, 96, 255))
-    body = Image.fromarray(kit.vgrad(w, h, [(0, (212, 104, 148)), (1, (168, 62, 108))])).convert('RGBA')
-    m = Image.new('L', (w, h), 0)
-    ImageDraw.Draw(m).rounded_rectangle((0, 0, w - 1, h - 1), 16, fill=255)
-    body.putalpha(m)
-    rb.alpha_composite(body, (40, 0))
-    d.rounded_rectangle((40, 0, 40 + w - 1, h - 1), 16, outline=(240, 200, 120, 255), width=4)
-    d.rounded_rectangle((52, 12, 28 + w - 1, h - 13), 10, outline=(255, 226, 170, 140), width=2)
-    rb.alpha_composite(im, (40 + (w - im.width) // 2, (h - im.height) // 2))
-    return rb
-
-
-@lru_cache(maxsize=None)
-def pill(txt, size=50, fill=(176, 66, 112), fg=(255, 255, 255), padx=60, h=None):
-    im = text_img(txt, 'sans-xb', size, fill=fg, shadow=0)
-    h = h or int(size * 2.1)
-    w = im.width + 2 * padx
-    out = Image.new('RGBA', (w + 40, h + 40), (0, 0, 0, 0))
-    m = Image.new('L', out.size, 0)
-    ImageDraw.Draw(m).rounded_rectangle((20, 26, 20 + w, 26 + h), h // 2, fill=110)
-    sh = Image.new('RGBA', out.size, (120, 40, 80, 0))
-    sh.putalpha(m.filter(ImageFilter.GaussianBlur(12)))
-    out.alpha_composite(sh)
-    d = ImageDraw.Draw(out)
-    d.rounded_rectangle((20, 20, 20 + w, 20 + h), h // 2, fill=fill + (255,), outline=(236, 194, 110, 255), width=4)
-    out.alpha_composite(im, (20 + (w - im.width) // 2, 20 + (h - im.height) // 2))
-    return out
-
-
-@lru_cache(maxsize=None)
-def price_img(num, size, **kw):
-    """A price set the way Israeli price tags show it: the number, then a smaller ₪ on its right."""
-    a = text_img(num, 'display', size, direction='ltr', **kw)
-    b = text_img('₪', 'display', int(size * 0.46), **kw)
-    gap = int(size * 0.0)
-    out = Image.new('RGBA', (a.width + gap + b.width, a.height), (0, 0, 0, 0))
-    out.alpha_composite(a, (0, 0))
-    out.alpha_composite(b, (a.width + gap, int(a.height * 0.86 - b.height)))
-    return out
-
-
-@lru_cache(maxsize=None)
-def struck(num, size):
-    im = price_img(num, size, fill='mauve', shadow=0, glow=6).copy()
-    d = ImageDraw.Draw(im)
-    d.line((8, im.height * 0.62, im.width - 8, im.height * 0.38), fill=(200, 60, 100, 255), width=max(4, size // 14))
-    return im
-
-
+# 15 — the climax: the launch-price poster
 @shot(118, 126, 'flash')
 def s_price(t, d):
-    c = climax_bg(t)
-    pop(c, t, 0.0, crown(190), W / 2, 250, dur=0.5)
-    pop(c, t, 0.12, crown(96), W / 2 - 420, 445, dur=0.5)
-    pop(c, t, 0.12, crown(96), W / 2 + 420, 445, dur=0.5)
-    headline(c, t, 0.05, 'הממלכה נפתחה!', 460, size=116, fill='plum', glow=8)
-    pop(c, t, SPB * 0.5, ribbon('מחיר השקה מיוחד'), W / 2, 650, dur=0.45, s0=0.7)
-    t79 = SPB          # the price lands on the next beat
-    big = price_img('79', 400, fill='gold', stroke=8, stroke_col=(150, 96, 26), glow=18, glow_col=(255, 248, 225))
-    p = prog(t, t79, 0.5)
-    if p > 0:
-        s = 1.7 - 0.7 * ease_back(p, 2.4)
-        place(c, big, W / 2, 975, scale=s, alpha=clamp01(p * 3))
-        light_sweep(c, prog(t, t79 + 0.6, 1.0), strength=0.3)
-    burst(c, t, t79, W / 2, 970, seed=91, n=60, speed=1500, life=1.5, size=(30, 110))
-    pop(c, t, t79 + 0.35, text_img('בלבד!', 'display', 124, fill='plum', glow=8), W / 2, 1235)
-    pop(c, t, t79 + SPB * 2, pill('ל־20 הרוכשות הראשונות בלבד!', 58), W / 2, 1440, s0=0.6)
-    p2 = prog(t, t79 + SPB * 4, 0.5)
-    if p2 > 0:
-        line = text_img('לאחר מכן המחיר יעלה ל־179 ₪', 'sans-b', 54, fill='mauve', glow=8, shadow=0.1)
-        place(c, line, W / 2, 1610 + 20 * (1 - ease_out(p2)), alpha=ease_out(p2))
-        place(c, struck('179', 96), W / 2, 1735, alpha=ease_out(prog(t, t79 + SPB * 5, 0.4)))
-    twinkles(c, t, seed=93, n=20, strength=0.9)
+    # opens close on the price, then the whole poster settles in on the beat
+    e = ease_in_out(prog(t, SPB * 0.6, SPB * 1.6))
+    c = poster_scene('price', t, zoom=1.55 - 0.55 * e, focus=(0.5, 0.31))
+    burst(c, t, SPB, W / 2, 480, seed=91, n=60, speed=1500, life=1.5, size=(30, 110))
+    light_sweep(c, prog(t, SPB * 2.4, 1.0), strength=0.28)
+    twinkles(c, t, seed=93, n=18, strength=0.9)
     return c
 
 
-# 16 — how to join
-STEPS = [
-    ('1', ['מעבירים 79 ₪ בביט למספר:'], '054-593-5578'),
-    ('2', ['שולחים צילום מסך של התשלום', 'בוואטסאפ לאותו מספר'], None),
-    ('3', ['מקבלים את פרטי הכניסה', 'לממלכה!'], None),
-]
-
-
-@lru_cache(maxsize=None)
-def medallion(n):
-    s = 130
-    k = 4
-    m = Image.new('L', (s * k, s * k), 0)
-    ImageDraw.Draw(m).ellipse((6 * k, 6 * k, (s - 6) * k, (s - 6) * k), fill=255)
-    m = m.resize((s, s), Image.LANCZOS)
-    im = Image.new('RGBA', (s, s), (0, 0, 0, 0))
-    e = Image.new('RGBA', (s, s), (150, 100, 30, 0))
-    e.putalpha(m.filter(ImageFilter.MaxFilter(5)))
-    im.alpha_composite(e)
-    im.alpha_composite(kit.gold_fill_mask(m))
-    d = ImageDraw.Draw(im)
-    d.ellipse((16, 16, s - 16, s - 16), outline=(255, 244, 210, 200), width=3)
-    num = text_img(n, 'display', 80, fill=(122, 31, 78), shadow=0)
-    im.alpha_composite(num, ((s - num.width) // 2, (s - num.height) // 2 - 4))
-    return im
-
-
-@lru_cache(maxsize=None)
-def step_card(i):
-    n, lines, phone_no = STEPS[i]
-    w, h = 960, 300 if phone_no else 250
-    card = panel(w, h, alpha=0.93)
-    pad = 40
-    card = card.copy()
-    card.alpha_composite(medallion(n), (pad + w - 30 - 130, pad + (h - 130) // 2))
-    tx = pad + w - 200      # right edge of the text column
-    imgs = [text_img(l, 'sans-xb', 52, fill='plum', shadow=0) for l in lines]
-    if phone_no:
-        num = text_img(phone_no, 'display', 104, fill='gold', stroke=4, stroke_col=(140, 88, 22),
-                       direction='ltr', glow=6, glow_col=(255, 250, 235))
-        imgs.append(num)
-    total = sum(im.height for im in imgs) + 16 * (len(imgs) - 1)
-    y = pad + (h - total) // 2
-    for j, im in enumerate(imgs):
-        x = tx - im.width if not (phone_no and j == len(imgs) - 1) else pad + 40 + (tx - pad - 40 - im.width) // 2
-        card.alpha_composite(im, (int(x), int(y)))
-        y += im.height + 16
-    return card
-
-
+# 16 — how to join: the poster
 @shot(126, 142, 'slide')
 def s_pay(t, d):
-    c = climax_bg(t, cy=520)
-    pop(c, t, 0.05, pill('79 ₪ בלבד · ל־20 הרוכשות הראשונות', 44, fill=(196, 92, 132)), W / 2, 150, s0=0.7)
-    headline(c, t, 0.2, 'איך מצטרפים לממלכה?', 330, size=96)
-    pop(c, t, 0.55, heart(86), W / 2, 450, dur=0.5)
-    ys = [720, 1040, 1330]
-    for i in range(3):
-        t0 = 0.6 + i * SPB * 2
-        p = prog(t, t0, 0.55)
-        if p > 0:
-            place(c, step_card(i), W / 2 + 140 * (1 - ease_out(p)), ys[i], alpha=ease_out(p))
-            burst(c, t, t0 + 0.2, W / 2 + 400, ys[i], seed=100 + i, n=10, speed=380, life=0.7, size=(18, 44))
-    p = prog(t, 0.6 + 6 * SPB, 0.6)
-    if p > 0:
-        logo = logo_img(560)
-        place(c, logo, W / 2, 1670, alpha=ease_out(p), scale=0.9 + 0.1 * ease_out(p))
-    # keep the phone number glinting while viewers read it
-    if t > 1.2:
-        k = (t - 1.2) % 2.4
-        if k < 0.9:
-            place(c, star(81), W / 2 - 330 + 560 * (k / 0.9), 768, alpha=math.sin(math.pi * k / 0.9))
-    twinkles(c, t, seed=111, n=12, area=(0, 1450, W, H), strength=0.7)
+    # held still and full-size so the steps and the number can be read
+    c = poster_scene('buy', t, zoom=1.0 + 0.025 * ease_in_out(t / d), focus=(0.5, 0.45))
+    twinkles(c, t, seed=111, n=10, area=(0, 0, W, 180), strength=0.7)
+    twinkles(c, t, seed=112, n=10, area=(0, 1740, W, H), strength=0.7)
     return c
 
 
-@lru_cache(maxsize=None)
-def logo_img(width):
-    im = Image.open(os.path.join(HERE, 'assets', 'chanili-logo.png')).convert('RGBA')
-    return im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
-
-
-# 17 — the end card
-@lru_cache(maxsize=None)
-def frame_border():
-    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    x0, y0, x1, y1 = 56, 200, W - 56, H - 200
-    d.rounded_rectangle((x0, y0, x1, y1), 40, outline=(222, 176, 90, 255), width=4)
-    d.rounded_rectangle((x0 + 14, y0 + 14, x1 - 14, y1 - 14), 30, outline=(222, 176, 90, 150), width=2)
-    for cx, cy in [(x0 + 44, y0 + 44), (x1 - 44, y0 + 44), (x0 + 44, y1 - 44), (x1 - 44, y1 - 44)]:
-        d.ellipse((cx - 30, cy - 30, cx + 30, cy + 30), outline=(222, 176, 90, 220), width=3)
-        d.ellipse((cx - 8, cy - 8, cx + 8, cy + 8), fill=(222, 176, 90, 255))
-    return im
-
-
-@lru_cache(maxsize=None)
-def divider():
-    im = Image.new('RGBA', (620, 40), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.line((0, 20, 270, 20), fill=(222, 176, 90, 200), width=2)
-    d.line((350, 20, 620, 20), fill=(222, 176, 90, 200), width=2)
-    d.polygon([(310, 4), (326, 20), (310, 36), (294, 20)], outline=(214, 160, 60, 255), width=4)
-    return im
-
-
+# 17 — the end: the kit poster
 @shot(142, 150, 'flash')
 def s_end(t, d):
-    c = brand_scene(t, letters=False)
-    c.alpha_composite(frame_border())
-    pop(c, t, 0.05, crown(170), W / 2, 440, dur=0.5)
-    headline(c, t, 0.15, 'מלך ומלכת האותיות', 640, size=122, fill=(140, 36, 64), glow=8)
-    headline(c, t, 0.45, '22 אותיות. שנה שלמה.', 815, size=72, fill='plum', face='serif', glow=6)
-    headline(c, t, 0.65, 'אינסוף חוויות חסידיות!', 920, size=80, fill='gold', face='display', stroke=3, glow=6)
-    pop(c, t, 0.85, divider(), W / 2, 1060, s0=0.8)
-    p = prog(t, 0.9, 0.7)
-    if p > 0:
-        place(c, logo_img(840), W / 2, 1290, scale=0.92 + 0.08 * ease_out(p), alpha=ease_out(p))
-        light_sweep(c, prog(t, 1.5, 1.1), strength=0.25)
-    headline(c, t, 1.2, 'ChaniLi Studio', 1550, size=60, fill='mauve', face='serif-md', glow=4)
-    twinkles(c, t, seed=121, n=24, strength=0.9)
-    # fade out at the very end
-    q = prog(t, d + 0.4, 0.6)
+    c = poster_scene('kit', t, zoom=1.0 + 0.04 * ease_in_out(t / d), focus=(0.5, 0.5))
+    light_sweep(c, prog(t, 0.6, 1.2), strength=0.22)
+    twinkles(c, t, seed=121, n=20, strength=0.9)
+    q = prog(t, d - 0.6, 0.6)
     if q > 0:
         c.alpha_composite(Image.new('RGBA', (W, H), (255, 250, 246, int(255 * q))))
     return c
