@@ -1,3 +1,5 @@
 node_modules/
 dist/stills/
 dist/work/
+launch/work/
+__pycache__/
