@@ -2,3 +2,4 @@ node_modules/
 dist/stills/
 dist/work/
 apartment/work/
+__pycache__/
