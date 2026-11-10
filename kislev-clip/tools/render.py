@@ -423,7 +423,7 @@ def main():
             fh.write(f"file 'part{i}.mp4'\n")
     final = os.path.join(out_dir, "rosh-chodesh-kislev-clip.mp4")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-i", AUDIO,
-                    "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "slow", "-crf", "20",
+                    "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "slow", "-b:v", "3400k", "-maxrate", "6M", "-bufsize", "8M",
                     "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart", final], check=True)
     print("done:", final)
 
