@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Shot list for the Rosh Chodesh Kislev 5738 clip – version 2, built on the
-20-panel storyboard (assets/source/storyboard-20-realistic.png – the realistic version of storyboard-20.png; panels n01–n20).
+20-panel storyboard (assets/source/storyboard-20-v4.png – realistic, white Torah mantles in panel 02; panels n01–n20).
 Panel 16 in the storyboard is the slot for the real photo of the Rebbe; the
 clip uses the real black-and-white photo (real_clean) there.
 
@@ -124,7 +124,33 @@ def build():
     shots = [s for s in shots if s["t"] < b(183.5)]
     shots.append(S(b(183.5), "n20", "full", (0.5, 0.42, 0.62), (0.5, 0.48, 0.9), "warm", ("leaves", "sparkle", "glow"), 0.9,
                    "סיום – 770 בשמחה", "ראש חודש כסלו\nיום של הודיה ושמחה!"))
-    return sorted(shots, key=lambda s: s["t"])
+    shots = sorted(shots, key=lambda s: s["t"])
+    return add_camera_moves(shots)
+
+
+def add_camera_moves(shots):
+    """Camera language (inspired by the movements in the reference video):
+    slow push-ins with a gentle roll, hand-held drift on every shot, a focus pull
+    into the prayer shots, an orbit-like roll on the dancing, whip-pans on the quick cuts."""
+    for s in shots:
+        if s["mode"] != "full" or s["src"] == "real_clean":
+            continue
+        if s["tin"] == 0.12:                       # quick cuts -> whip pan
+            s["fx"].add("whip"); s["tin"] = 0.28
+            s["roll"] = (-1.2, 1.2) if int(s["t"] / BEAT) % 2 else (1.2, -1.2)
+        elif s["grade"] == "cool":                 # worry: slow uneasy roll settling
+            s["roll"] = (-1.5, 0.0)
+        elif "pulse" in s["fx"] and "sparkle" in s["fx"]:   # joy: orbiting camera
+            s["roll"] = (2.0, -2.0); s["hand"] = 1.6
+        elif s["src"] == "n15":                    # push into the 770 door
+            s["roll"] = (0.0, 2.5)
+        elif "glow" in s["fx"] and s["src"] in ("n08", "n10", "n13"):
+            s["fx"].add("focus"); s["roll"] = (0.8, -0.4)
+        elif s["src"] in ("n01", "n20", "n11", "n12"):
+            s["roll"] = (-0.8, 0.4)                # crane / establishing
+        else:
+            s["roll"] = (0.6, -0.6)
+    return shots
 
 
 END = 198.0

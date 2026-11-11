@@ -120,17 +120,50 @@ def render_frame_mode(shot, u, t, zoom_pulse):
     reg[:] = reg * (1 - border * 0.85) + gold * border * 0.85
     return out
 
+def handheld(t, seed):
+    """Smooth organic camera drift (sum of slow sines), like a hand-held or steadicam camera."""
+    r = np.random.default_rng(seed).random(9)
+    x = sum(math.sin(t * (0.31 + 0.5 * r[i]) * (i + 1) + r[i + 3] * 6.28) / (i + 1) for i in range(3))
+    y = sum(math.sin(t * (0.27 + 0.5 * r[i + 3]) * (i + 1) + r[i + 6] * 6.28) / (i + 1) for i in range(3))
+    rot = math.sin(t * 0.23 + r[2] * 6.28) + 0.5 * math.sin(t * 0.61 + r[5] * 6.28)
+    return x, y, rot
+
 def render_full_mode(shot, u, t, zoom_pulse):
+    """16:9 virtual camera over the panel: pan / push-in, roll (dutch angle) and hand-held drift."""
     im = load(shot["src"])
-    cx, cy, w = lerp(shot["a"], shot["b"], ease_io(u))
+    real = shot["src"] in REAL
+    e = ease_io(u)
+    cx, cy, w = lerp(shot["a"], shot["b"], e)
     w /= zoom_pulse
+    r0, r1 = shot.get("roll", (0.0, 0.0))
+    hand = 0.0 if real else shot.get("hand", 1.0)
+    hx, hy, hr = handheld(t, sum(map(ord, shot["src"])) + int(shot["t"] * 10))
     sw = w * im.width
-    shh = sw * 9 / 16
-    if shh > im.height:
-        shh = im.height; sw = shh * 16 / 9
-    l = min(max(cx * im.width - sw / 2, 0), im.width - sw)
-    tp = min(max(cy * im.height - shh / 2, 0), im.height - shh)
-    return to_np(im.transform((W, H), Image.EXTENT, (l, tp, l + sw, tp + shh), Image.BICUBIC))
+    if sw * 9 / 16 > im.height:
+        sw = im.height * 16 / 9
+    sh_ = sw * 9 / 16
+    # room needed so the rotated window stays inside the image
+    ang = math.radians(r0 + (r1 - r0) * e + hr * 0.25 * hand)
+    if abs(ang) > 1e-4 or hand:
+        grow = abs(math.cos(ang)) + abs(math.sin(ang)) * 16 / 9 + 0.012 * hand
+        need = sw * grow
+        if need > im.width or need * 9 / 16 > im.height:
+            f = min(im.width / need, im.height / (need * 9 / 16))
+            sw *= f; sh_ *= f
+    ccx = cx * im.width + hx * 0.004 * sw * hand
+    ccy = cy * im.height + hy * 0.004 * sh_ * hand
+    # keep rotated corners inside
+    hw = (abs(math.cos(ang)) * sw + abs(math.sin(ang)) * sh_) / 2
+    hh = (abs(math.sin(ang)) * sw + abs(math.cos(ang)) * sh_) / 2
+    ccx = min(max(ccx, hw), im.width - hw)
+    ccy = min(max(ccy, hh), im.height - hh)
+    sc = sw / W
+    ca, sa = math.cos(ang), math.sin(ang)
+    a_, b_ = sc * ca, -sc * sa
+    d_, e_ = sc * sa, sc * ca
+    c_ = ccx - a_ * W / 2 - b_ * H / 2
+    f_ = ccy - d_ * W / 2 - e_ * H / 2
+    return to_np(im.transform((W, H), Image.AFFINE, (a_, b_, c_, d_, e_, f_), Image.BICUBIC))
 
 _banner = {}
 def render_banner(shot, u, t):
@@ -276,6 +309,15 @@ def beat_pulse(t):
     dt = t - BEATS[k]
     return math.exp(-dt * 9.0)
 
+def hblur(img, amt):
+    """Directional motion blur for whip-pan transitions."""
+    if amt < 0.05:
+        return img
+    f = max(2, int(2 + 30 * amt))
+    pil = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8))
+    pil = pil.resize((W // f, H), Image.BILINEAR).resize((W, H), Image.BILINEAR)
+    return np.asarray(pil, np.float32) / 255
+
 def render_shot(i, t):
     s = SHOTS[i]
     start, end, _ = shot_window(i)
@@ -292,6 +334,11 @@ def render_shot(i, t):
         img = render_card(s, u, t)
     if s["src"] in REAL:
         return img  # the real photo stays exactly as it is
+    if "focus" in s["fx"]:
+        fr = 1 - ease((t - s["t"]) / 1.1)   # rack focus: soft -> sharp
+        if fr > 0.02:
+            pil = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(14 * fr))
+            img = np.asarray(pil, np.float32) / 255
     img = grade(img, s["grade"])
     if pulse:
         img = img * (1 + 0.045 * pulse)
@@ -358,6 +405,9 @@ def compose(t):
             out = img
             continue
         k = ease((t - start) / max(tin_d, 1e-3))
+        if "whip" in s["fx"] and 0 < k < 1:
+            amt = 1 - abs(2 * k - 1)          # strongest mid-transition
+            out = hblur(out, amt); img = hblur(img, amt)
         if s["tin"] == "white":
             # previous shot blooms to white, then the photo emerges from the light
             if k < 0.5:
