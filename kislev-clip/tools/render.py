@@ -335,7 +335,7 @@ def caption_layer(text):
         d = ImageDraw.Draw(layer)
         lines = text.split("\n")
         f = ImageFont.truetype(FONT_TITLE, 120 if len(lines) == 1 else 112)
-        y = H * (0.66 if len(lines) == 1 else 0.30)
+        y = H * (0.80 if len(lines) == 1 else 0.30)
         for ln in lines:
             bb = d.textbbox((0, 0), ln, font=f, direction="rtl", language="he")
             x = (W - (bb[2] - bb[0])) / 2 - bb[0]
