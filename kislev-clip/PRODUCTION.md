@@ -1,7 +1,7 @@
 # חבילת הפקה – קליפ ראש חודש כסלו תשל"ח
 
 המסמך הזה משלים את הקליפ המרונדר (`dist/rosh-chodesh-kislev-clip.mp4`).
-הקליפ המרונדר בנוי מתמונות הסטוריבורד, עם תנועות מצלמה, מעברים, אור ועלי שלכת. **זו לא הנפשת תלת־ממד מלאה.** כאן יש כל מה שצריך כדי להפיק את אותו קליפ בהנפשה מלאה בכלי וידאו כמו Veo,‏ Kling או Runway, בלי תכנון נוסף.
+הקליפ המרונדר בנוי מתמונות הסטוריבורד בן 20 הפאנלים, עם תנועות מצלמה, מעברים, אור ועלי שלכת. **זו לא הנפשת תלת־ממד מלאה.** כאן יש כל מה שצריך כדי להפיק את אותו קליפ בהנפשה מלאה בכלי וידאו כמו Veo,‏ Kling או Runway, בלי תכנון נוסף.
 
 ---
 
@@ -20,62 +20,60 @@
 
 ---
 
-## 2. טבלת שוטים – הסבב הראשון
+## 2. טבלת שוטים – הסבב הראשון (גרסה 2, הדמויות החדשות)
 
-**הסבב השני** (1:33.5–3:03.7) חוזר על אותו סדר בדיוק, בתוספת 93.5 שניות, עם מסגורים מתחלפים. התמונה האמיתית מופיעה בו שוב ב־**2:29.5**.
+המספרים הם הפאנלים בסטוריבורד בן 20 הפאנלים (`assets/source/storyboard-20.png`).
+**הסבב השני** (1:33.5–3:03.7) חוזר על אותו סדר בתוספת 93.5 שניות, עם מסגורים ותנועות מצלמה אחרים. התמונה האמיתית מופיעה בו שוב ב־**2:29.5**.
 
-| זמן | מילים (לפי הסדר) | שוט בקליפ | תנועת מצלמה | אווירה |
-|---|---|---|---|---|
-| 0:00–0:07.4 | (פתיחה מוזיקלית) | 770 בשקיעה, עלי שלכת. כותרת: "ראש חודש כסלו תשל״ח" | התקרבות איטית לחלון המפרץ | חמים, זהב |
-| 0:07.4–0:11.1 | בשמחת תורה באמצע הקפות | הילד ליד ספר התורה, חסידים שמחים | זום פנימה עדין, פולס על הפעמה | חגיגי |
-| 0:11.1–0:14.3 | (המשך השורה) | ריקוד עם ספר התורה | פן ימינה | חגיגי |
-| 0:14.3–0:21.2 | לפתע הרבי בליבו | האב והילד מודאגים | זום פנימה איטי מאוד | צבעים מתקררים |
-| 0:21.2–0:24.5 | כל החסידים היו מאוד עצובים | אב מחזיק את מצחו, ילד מביט | דחיפה עדינה | קריר |
-| 0:24.5–0:27.7 | (המשך) | תקריב על הילד | התקרבות לפנים | קריר |
-| 0:27.7–0:31.4 | רוצים את הרבי במהרה לראות | חסידים ממתינים מול 770 בלילה | זום פנימה | ציפייה |
-| 0:31.4–0:34.6 | (המשך) | החלונות המוארים של 770 | התקרבות לחלון | ציפייה |
-| 0:34.6–0:38.8 | **פזמון:** כולם מתפללים לרפואתו | חסידים מתפללים | זום פנימה | חמים ועדין |
-| 0:38.8–0:42.5 | מתי נראה אותו בתפילתו | ילד עם ספר תהילים | התקרבות לספר | חמים |
-| 0:42.5–0:46.6 | כולם מחכים לרבי שיבוא | ההמון בפתח 770 | התקדמות לדלתות | ציפייה |
-| 0:46.6–0:51.7 | מתי, מתי, עד מתי | 4 חיתוכים על הקצב: חסיד מבוגר, ספר תהילים, ילד, חלונות 770 | חיתוך כל 3 פעמות | קצבי |
-| 0:51.7–0:53.5 | בראש חודש כסלו קרה הנס | לוח השנה "ראש חודש כסלו" | זום עם הארה זהובה ונצנוצים | בשורה |
-| 0:53.5–0:55.8 | (המשך) | דלתות 770 | דחיפה חזקה אל הדלת, ואז אור לבן | שיא מתקרב |
-| **0:55.8–1:00.0** | **יצא הרבי מחדרו פעם ראשונה** | **התמונה האמיתית בשחור־לבן**, יוצאת מתוך האור | זום דיגיטלי איטי בלבד. בלי צבע, אפקטים או עלים | הרגע המרגש |
-| 1:00.0–1:03.7 | (המשך) | התמונה האמיתית במסגרת, עם המגילה מהסטוריבורד | כמעט סטטי | |
-| 1:03.7–1:06.4 | אל החסידים משבע מאות שבעים | "הגיעה הבשורה המרגשת" – חסידים וילדים מתרגשים | זום פנימה | שמחה |
-| 1:06.4–1:09.7 | (המשך) | ההמון מול 770 | זום | שמחה |
-| 1:09.7–1:12.4 | כולם כל כך שמחים, שרים ורוקדים | ילדים וחסידים שמחים | פולס על הפעמה | שמחה גדולה |
-| 1:12.4–1:15.7 | (המשך) | ילדים מניפים ידיים | פן | שמחה גדולה |
-| 1:15.7–1:19.4 | **פזמון (אחרי הנס)** | ריקוד מעגל | פולס | הודיה |
-| 1:19.4–1:23.1 | (מתי נראה אותו בתפילתו) | תהילים כזיכרון חמים, לא עצוב | פן | זהוב |
-| 1:23.1–1:26.8 | (כולם מחכים לרבי) | 770 עם ההמון | זום | חגיגי |
-| 1:26.8–1:33.5 | (מתי, מתי) | 4 חיתוכי שמחה על הקצב | חיתוך כל 4 פעמות | שיא |
-| … | **הסבב השני** | אותו סדר עם מסגורים חדשים | | |
-| 3:03.7–3:09.2 | סיום | "ראש חודש כסלו – יום של הודיה ושמחה!" | זום | חגיגי |
-| 3:09.2–3:12.6 | | באנר הסיום עם 770 | | |
-| 3:12.6–3:18 | | "יחי אדוננו מורנו ורבינו מלך המשיח לעולם ועד!" | הופעה הדרגתית ודעיכה לשחור | |
+| זמן | מילים (לפי הסדר) | פאנל | מה רואים | תנועת מצלמה | אווירה |
+|---|---|---|---|---|---|
+| 0:00–0:07.4 | (פתיחה מוזיקלית) | 01 | 770 בערב, עץ שלכת, פנסים. כותרת: "ראש חודש כסלו תשל״ח" | התקרבות איטית לבניין | זהב וכחול ערב |
+| 0:07.4–0:11.1 | בשמחת תורה באמצע הקפות | 02 | חסידים מחבקים ספרי תורה ורוקדים | פן משמאל לימין, קפיצה על הפעמה | חגיגי |
+| 0:11.1–0:14.3 | (המשך) | 03 | הילד ואביו מוחאים כפיים | התקרבות לילד | חגיגי |
+| 0:14.3–0:21.2 | לפתע הרבי בליבו | 06 | חסידים מודאגים, יד על הסנטר | התקרבות איטית | צבעים מתקררים |
+| 0:21.2–0:24.5 | כל החסידים היו מאוד עצובים | 05 | האב מניח יד מרגיעה על כתף הילד | דחיפה עדינה | קריר |
+| 0:24.5–0:27.7 | (המשך) | 06 | תקריב על חסיד מודאג | התקרבות | קריר |
+| 0:27.7–0:31.4 | רוצים את הרבי במהרה לראות | 04 | חסידים מביטים למעלה בתקווה | פן לפנים | ציפייה |
+| 0:31.4–0:34.6 | (המשך) | 11 | חלונות 770 המוארים | התקרבות לחלון | ציפייה |
+| 0:34.6–0:38.8 | **פזמון:** כולם מתפללים לרפואתו | 08 | אב ובן אומרים תהילים | התקרבות לספרים | חמים |
+| 0:38.8–0:42.5 | מתי נראה אותו בתפילתו | 10 | הילד מביט אל מקומו הריק של הרבי | דחיפה אל המקום | געגוע |
+| 0:42.5–0:46.6 | כולם מחכים לרבי שיבוא | 12 | אב ובן מביטים אל 770 | התקרבות | ציפייה |
+| 0:46.6–0:51.7 | מתי, מתי, עד מתי | 07 · 09 · 05 · 04 | 4 חיתוכים: ילד עם תהילים, דף תהילים, פני הילד, החסיד המבוגר | חיתוך כל 3 פעמות | קצבי |
+| 0:51.7–0:53.5 | בראש חודש כסלו קרה הנס | 13 | הילד מרים עיניים באור זהוב. כיתוב: "ראש חודש כסלו" | התקרבות, נצנוצים | בשורה |
+| 0:53.5–0:55.8 | (המשך) | 15 | דלת 770 | דחיפה חזקה אל הדלת, ואז אור לבן | שיא |
+| **0:55.8–1:03.7** | **יצא הרבי מחדרו פעם ראשונה** | **16 = התמונה האמיתית** | התמונה בשחור־לבן עולה מתוך האור | זום דיגיטלי איטי פנימה ואחורה. בלי צבע, אפקטים או עלים | הרגע המרגש |
+| 1:03.7–1:06.4 | אל החסידים משבע מאות שבעים | 14 | חסידים וילד מתרגשים | התקרבות | שמחה |
+| 1:06.4–1:09.7 | (המשך) | 20 | ההמון מול 770 | התקרבות | שמחה |
+| 1:09.7–1:12.4 | כולם כל כך שמחים, שרים ורוקדים | 17 | הילד מניף אגרוף, האב צוחק | התקרבות, קפיצה על הפעמה | שמחה גדולה |
+| 1:12.4–1:15.7 | (המשך) | 18 | חסידים רוקדים במעגל | פן עם הריקוד | שמחה גדולה |
+| 1:15.7–1:19.4 | **פזמון (אחרי הנס)** | 19 | הילדים רוקדים במעגל | התקרבות | הודיה |
+| 1:19.4–1:23.1 | (מתי נראה אותו בתפילתו) | 08 | תהילים כזיכרון חמים, לא עצוב | התרחקות | זהוב |
+| 1:23.1–1:26.8 | (כולם מחכים לרבי) | 12 | אב ובן מול 770, הפעם בשמחה | התקרבות | חגיגי |
+| 1:26.8–1:33.5 | (מתי, מתי) | 17 · 18 · 19 · 14 | 4 חיתוכי שמחה | חיתוך כל 4 פעמות | שיא |
+| … | **הסבב השני** | | אותו סדר עם מסגורים חדשים | | |
+| 3:03.7–3:10.4 | סיום | 20 | 770 וההמון. כיתוב: "ראש חודש כסלו – יום של הודיה ושמחה!" | התרחקות | חגיגי |
+| 3:10.4–3:18 | | | "יחי אדוננו מורנו ורבינו מלך המשיח לעולם ועד!" | הופעה הדרגתית ודעיכה לשחור | |
 
 ---
 
-## 3. גיליון דמויות (לכל שוט מונפש)
+## 3. גיליון דמויות (לפי הסטוריבורד החדש)
 
-**ילד ראשי ("מנחם")**: כבן 6, שיער חום־בהיר קצר ומסודר, כיפה שחורה מבד, עיניים חומות גדולות. חולצה לבנה, אפודה כהה, מכנסיים כהים וציציות.
-**פאות: קצרות מאוד, ישרות וצמודות לראש, לא יורדות מתחת לאמצע האוזן**, בדיוק כמו בסטוריבורד.
+**הילד**: כבן 5–6, שיער חום קצר, עיניים כחולות גדולות, כיפה שחורה וחולצה לבנה. **פאות קצרות מאוד, צמודות לראש, לא יורדות מתחת לאמצע האוזן.**
 
-**האבא**: כבן 35, זקן חום מלא, כובע חסידי שחור רחב שוליים, חליפה שחורה וחולצה לבנה. פאות קצרות, מסודרות מאחורי האוזן.
+**האבא**: כבן 35, זקן חום מלא ומטופח, כובע חסידי שחור, חליפה שחורה וחולצה לבנה. פאות קצרות מאחורי האוזן.
 
-**חסיד מבוגר**: כבן 60, זקן אפור, משקפיים, כובע וחליפה שחורים.
+**החסיד המבוגר**: זקן לבן מלא, משקפיים עגולים, כובע וחליפה שחורים.
 
-**הרבי:** לא מונפש בשום שוט. מופיע **רק** בתמונה ההיסטורית האמיתית.
+**הרבי:** לא מונפש בשום שוט. מופיע **רק** בתמונה ההיסטורית האמיתית, במקום פאנל 16.
 
-**רק בנים וגברים, ללא נשים או בנות.** (בסטוריבורד בן 6 התמונות יש פאנל עם ילדה, והוא הושמט מהקליפ.)
+**רק בנים וגברים, ללא נשים או בנות.**
 
 ### Negative prompt (להוסיף לכל שוט)
 ```
 long sidelocks, long peyot, curly sidelocks, dangling side curls, payos below the ears,
-girls, women, female characters, the Rebbe, elderly rabbi with white beard (animated),
+girls, women, female characters, the Rebbe, elderly rabbi with white beard waving (animated),
 exaggerated faces, distorted hands, extra fingers, inconsistent characters, plastic skin,
-text, subtitles, watermark, low quality, flicker
+text, subtitles, watermark, numbers, low quality, flicker
 ```
 
 ---
@@ -84,40 +82,41 @@ text, subtitles, watermark, low quality, flicker
 
 סגנון קבוע לכל השוטים (להדביק בתחילת כל פרומפט):
 ```
-Cinematic 3D animated feature-film style, soft expressive characters, warm golden autumn light,
-rich textures, shallow depth of field, 16:9, 25fps. Chabad chassidim: black fedora hats, black
-suits, white shirts, natural beards. Boys: black kippah, short neat hair, VERY SHORT sidelocks
-that do not go below the middle of the ear. Only men and boys.
+Cinematic 3D animated feature-film style, soft expressive characters, warm golden light,
+autumn evening, shallow depth of field, 16:9, 25fps. Chabad chassidim: black fedora hats,
+black suits, white shirts, natural beards. Boy: brown short hair, blue eyes, black kippah,
+white shirt, VERY SHORT sidelocks that do not go below the middle of the ear. Only men and boys.
 ```
-יש להעלות לכלי את הפאנל המתאים מתוך `assets/panels_hd/` כתמונת פתיחה (image-to-video), כדי לשמור על המראה של הסטוריבורד.
+יש להעלות לכלי את הפאנל המתאים מתוך `assets/panels_hd/` (n01–n20) כתמונת פתיחה (image-to-video), כדי שהדמויות יישארו זהות.
 
-| # | זמן | תמונת פתיחה | פרומפט |
-|---|---|---|---|
-| 1 | 0:00 | s04 | Establishing shot of 770 Eastern Parkway, Brooklyn, at golden-hour dusk, autumn leaves falling, slow drone push-in toward the bay window, crowd of chassidim below. |
-| 2 | 0:07 | g01 | Inside the crowded synagogue on Simchat Torah, men dance joyfully holding a Torah scroll with a purple mantle and gold crown; a small boy claps and smiles. Camera slowly dollies in. |
-| 3 | 0:11 | s01 | Circle of dancing chassidim around the Torah, children clapping, camera pans right with the dance. |
-| 4 | 0:14 | p_worry | The dancing stops; a father lowers his head with his hand on his forehead, his young son leans on his hands looking worried. Lighting shifts cooler. Very slow push-in. |
-| 5 | 0:21 | g02 | Close on the worried father; the boy looks up at him with questioning eyes; father gently places a hand on the boy's shoulder. |
-| 6 | 0:27 | g05 | Night outside 770, chassidim waiting quietly, warm light in the windows, leaves falling. Slow crane up toward the windows. |
-| 7 | 0:34 | g03 | Men praying with clasped hands, eyes closed, soft warm light. Slow tracking across faces. |
-| 8 | 0:38 | g04 | Small boy reading a Tehillim book, close-up on the book and his hands, then his face. |
-| 9 | 0:42 | g08 | Wide shot of chassidim gathering at the entrance of 770; camera moves forward toward the doors. |
-| 10 | 0:46 | g03 / g04 / p_worry / g05 | Four rhythmic cuts on the beat: old chassid praying, Tehillim book, boy's face, the windows of 770. New angles each time. |
-| 11 | 0:51 | g06 | A desk calendar showing "ראש חודש כסלו"; warm sunrise light floods in, gentle golden sparkles. |
-| 12 | 0:53 | g08 | Fast, smooth push toward the doors of 770; the doorway glows, flare to white. |
-| **13** | **0:56** | **real_clean** | **Not generated.** Use the real black-and-white photo exactly as it is. Slow digital zoom only. |
-| 14 | 1:03 | g07 | A boy and his father hear the news; faces light up with joy, children clap. |
-| 15 | 1:06 | s04 | Crowd in front of 770 cheering, leaves swirling, golden light. |
-| 16 | 1:09 | s06 / g10 | Explosion of joy: boys jump and raise fists, men laugh and sing. |
-| 17 | 1:15 | g11 | Chassidim dance in circles with arms on shoulders, camera circles around them. |
-| 18 | 1:26 | g10 / s06 / g11 / g07 | Rhythmic joy cuts on the beat. |
-| 19 | 3:03 | g12 | Parchment banner "ראש חודש כסלו – יום של הודיה ושמחה!" in front of 770, autumn trees, camera rises. |
+| פאנל | זמן | פרומפט |
+|---|---|---|
+| 01 | 0:00 | 770 Eastern Parkway at blue-hour dusk, golden autumn tree and street lamps, chassidim walking to the entrance; slow drone push-in. |
+| 02 | 0:07 | Simchat Torah: two chassidim hug Torah scrolls with burgundy crowned mantles and dance, eyes closed in joy; camera pans with them. |
+| 03 | 0:11 | The boy and his father clap and sing together, faces glowing; gentle dolly toward the boy. |
+| 06 | 0:14 | The joy fades; chassidim fall silent, hands on chins, worried. Light turns cooler. Very slow push-in. |
+| 05 | 0:21 | The father leans down and rests a calming hand on his son's shoulder; the boy looks up at him with questioning eyes. |
+| 04 | 0:27 | An elderly chassid and two younger men look upward with hope; camera drifts right. |
+| 11 | 0:31 | The glowing windows of 770 at night, silhouettes inside, leaves falling; slow push to the window. |
+| 08 | 0:34 | Father and son read Tehillim side by side; close on the books and hands, then faces. |
+| 10 | 0:38 | From behind, the boy looks toward the Rebbe's empty place lit by warm light; slow push forward. |
+| 12 | 0:42 | Outside 770, father and son look up at the building, waiting; leaves drift down. |
+| 07/09/05/04 | 0:46 | Four rhythmic cuts on the beat: the boy reading Tehillim, a hand turning a Tehillim page, the boy's face, the elderly chassid. |
+| 13 | 0:51 | The boy lifts his eyes as warm golden sunlight washes over him; gentle sparkles. |
+| 15 | 0:53 | Fast smooth push toward the 770 doors; the doorway glows and flares to white. |
+| **16** | **0:56** | **Not generated.** Use the real black-and-white photo exactly as it is. Slow digital zoom only. |
+| 14 | 1:03 | The elderly chassid, the father and the boy look up in joyful amazement. |
+| 20 | 1:06 | Huge crowd in front of 770 at dusk, autumn trees, lamps glowing; camera rises. |
+| 17 | 1:09 | The boy raises his fist with joy while his father laughs and hugs him. |
+| 18 | 1:12 | Chassidim dance in a circle, arms on shoulders, tzitzit swinging; camera circles. |
+| 19 | 1:15 | Boys hold hands and dance in a circle, the crowd of chassidim behind them. |
+| 20 | 3:03 | Wide final shot of 770 with the joyous crowd; camera rises slowly. |
 
 ---
 
 ## 5. התמונה האמיתית של הרבי
 
-* המקור הוא הפאנל האמצעי בסטוריבורד (צילום המסך), עם הסימן **JEM**. הסימן נשאר בתמונה.
+* בסטוריבורד החדש היא נכנסת במקום פאנל 16. מקור התמונה הוא צילום המסך ששלחת, עם הסימן **JEM**, והסימן נשאר בתמונה.
 * בקליפ התמונה **רק מוגדלת** (Lanczos, בלי AI). אין עליה צבע, גרעין, עלים או אפקטים, ואין הנפשה של הפנים.
 * היא מופיעה מתוך הבזק אור לבן, על הפעמה ב־0:55.8, והיא מלאה לגמרי ב־0:56.
 * **זכויות:** התמונה של JEM ‏(Jewish Educational Media). לפני הפצה ציבורית כדאי לבקש מהם אישור שימוש ולוודא שהתמונה היא מיציאת הרבי בראש חודש כסלו תשל"ח.
@@ -129,9 +128,9 @@ that do not go below the middle of the ear. Only men and boys.
 
 | בדיקה | מצב |
 |---|---|
-| אין נשים או בנות | ✔ הפאנל עם הילדה הושמט |
-| אין פאות ארוכות | ✔ רק פאנלי הסטוריבורד. הסרטון המונפש (עם פאות ארוכות ו"רבי" שנוצר ב־AI) **לא** נכנס לקליפ |
-| אין רבי מונפש או שנוצר ב־AI | ✔ גם הפאנל "והנה – הרבי יוצא!" (רבי מאויר) הושמט |
+| אין נשים או בנות | ✔ בסטוריבורד החדש יש רק בנים וגברים |
+| אין פאות ארוכות | ✔ רק הדמויות מהסטוריבורד החדש. הסרטון המונפש והסטוריבורדים הקודמים לא נכנסים לקליפ |
+| אין רבי מונפש או שנוצר ב־AI | ✔ פאנל 16 הוא התמונה האמיתית |
 | התמונה האמיתית ב־0:56 | ✔ |
 | 770 מזוהה | ✔ לפי ציורי הסטוריבורד |
 | השיר לא שונה | ✔ השמע המקורי, AAC ‏256k, בלי קיצור או שינוי מהירות |

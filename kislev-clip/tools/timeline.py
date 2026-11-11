@@ -1,130 +1,130 @@
 # -*- coding: utf-8 -*-
 """
-Shot list for the Rosh Chodesh Kislev 5738 clip, matched to the song's structure.
+Shot list for the Rosh Chodesh Kislev 5738 clip – version 2, built on the
+20-panel character storyboard (assets/source/storyboard-20.png, panels n01–n20).
+Panel 16 in the storyboard is the slot for the real photo of the Rebbe; the
+clip uses the real black-and-white photo (real_clean) there.
 
-Song analysis (song.mp3, 3:18, measured with tools/analyze_song.py):
+Song analysis (song.mp3, 3:18, tools/analyze_song.py):
   * Tempo 130 BPM (one beat = 0.4615 s, first beat at 0.455 s).
-  * The arrangement plays twice: pass 2 starts 93.5 s after pass 1
-    and repeats the same music exactly.
+  * The arrangement plays twice: pass 2 starts 93.5 s after pass 1.
   * Section boundaries in pass 1: 7.5 / 14 / 34.5 / 42 / 53.5 / 66.5 / 75.5 / 83 / 90.5.
   * Fixed point from the brief: at 0:56, "יצא הרבי מחדרו פעם ראשונה",
-    the real black-and-white photo of the Rebbe appears.
+    the real black-and-white photo appears.
 
-Every shot starts on the nearest beat (see b()). To move a shot, change its
-time here and run tools/render.py again.
+Every shot starts on the nearest beat (b()). To move a shot, change its time
+here and run tools/render.py again.
 
 Fields:
-  t     start time in seconds (beat-snapped)
-  src   image name under assets/panels (upscaled versions are used)
-  mode  'frame' = whole storyboard panel in a frame on a blurred background
-        'full'  = 16:9 window that moves across the panel (Ken Burns)
-  a, b  start and end window (cx, cy, w), normalised to the panel ('full')
-        or (cx, cy, zoom) inside the frame ('frame')
+  t     start time in seconds
+  src   image name under assets/panels (upscaled versions in panels_hd are used)
+  mode  'full'  = 16:9 window moving across the panel (Ken Burns)
+        'frame' = whole panel in a frame on a blurred background
+        'card'  = closing text card
+  a, b  start / end window: (cx, cy, w) for 'full', (cx, cy, zoom) for 'frame'
   grade warm / cool / gold / none
   fx    leaves, sparkle, pulse (on the beat), glow
-  tin   crossfade length into this shot; 'white' = transition through white light
-  lyric which line of the song this shot carries (documentation only)
+  tin   crossfade into this shot (seconds), or 'white' = through white light
+  text  optional caption drawn over the shot
+  lyric which line of the song the shot carries (documentation only)
 """
 
 BPM = 130.02
 BEAT = 60.0 / BPM
 PHASE = 0.455
-PASS = 93.5          # length of one pass of the arrangement
-PHOTO_T = 56.0       # the brief: the real photo at 0:56
+PASS = 93.5
+PHOTO_T = 56.0
 
 
 def b(t):
-    """Snap a time to the nearest beat."""
     n = round((t - PHASE) / BEAT)
     return round(PHASE + n * BEAT, 3)
 
 
-def S(t, src, mode, a, b_, grade="warm", fx=(), tin=0.6, lyric=""):
-    return dict(t=t, src=src, mode=mode, a=a, b=b_, grade=grade, fx=set(fx), tin=tin, lyric=lyric)
+def S(t, src, mode, a, b_, grade="warm", fx=(), tin=0.6, lyric="", text=None):
+    return dict(t=t, src=src, mode=mode, a=a, b=b_, grade=grade, fx=set(fx), tin=tin, lyric=lyric, text=text)
 
 
-def pass_one(o, variant):
-    """One pass of the song. o = time offset; variant 0/1 swaps framings so the repeat feels new."""
-    v = variant
-    shots = []
-    add = shots.append
-    # ---- intro (instrumental) ----
+WIDE = (0.5, 0.5, 0.9)   # the whole panel (panels are wider than 16:9)
+
+
+def one_pass(o, v):
+    sh = []
+    add = sh.append
+    # ---- intro ----
     if v == 0:
-        add(S(0.0, "s04", "full", (0.50, 0.36, 0.96), (0.53, 0.31, 0.62), "warm", ("leaves", "glow"), 0, "פתיחה – 770 בשקיעה"))
+        add(S(0.0, "n01", "full", WIDE, (0.60, 0.45, 0.58), "warm", ("leaves", "glow"), 0, "פתיחה – 770 בערב"))
     else:
-        add(S(o + 0.0, "g08", "full", (0.50, 0.34, 0.95), (0.62, 0.30, 0.60), "warm", ("leaves", "glow"), 1.2, "פתיחה – 770, החזרה"))
+        add(S(o, "n20", "full", (0.5, 0.45, 0.9), (0.50, 0.38, 0.60), "warm", ("leaves", "glow"), 1.2, "פתיחה – 770, החזרה"))
     # ---- verse 1 ----
-    t = o + 7.5
     if v == 0:
-        add(S(b(t), "g01", "frame", (0.5, 0.45, 1.0), (0.48, 0.42, 1.07), "warm", ("pulse", "glow"), 0.8, "בשמחת תורה באמצע הקפות"))
-        add(S(b(t + 3.7), "s01", "full", (0.42, 0.31, 0.78), (0.58, 0.30, 0.64), "warm", ("pulse",), 0.5, "בשמחת תורה (ריקודים עם ספר התורה)"))
+        add(S(b(o + 7.5), "n02", "full", (0.34, 0.50, 0.72), (0.62, 0.50, 0.68), "warm", ("pulse", "glow"), 0.8, "בשמחת תורה באמצע הקפות"))
+        add(S(b(o + 11.1), "n03", "full", WIDE, (0.36, 0.45, 0.64), "warm", ("pulse",), 0.5, "(הילד ואביו מוחאים כפיים)"))
     else:
-        add(S(b(t), "s01", "frame", (0.5, 0.45, 1.0), (0.52, 0.42, 1.07), "warm", ("pulse", "glow"), 0.8, "בשמחת תורה באמצע הקפות"))
-        add(S(b(t + 3.7), "g01", "full", (0.40, 0.36, 0.80), (0.62, 0.30, 0.62), "warm", ("pulse",), 0.5, "בשמחת תורה (ספר התורה והילד)"))
-    add(S(b(o + 14.25), "p_worry", "frame", (0.5, 0.42, 1.0), (0.55, 0.40, 1.09), "cool", (), 1.0, "לפתע הרבי בליבו"))
+        add(S(b(o + 7.5), "n03", "full", (0.62, 0.40, 0.62), (0.40, 0.45, 0.80), "warm", ("pulse", "glow"), 0.8, "בשמחת תורה באמצע הקפות"))
+        add(S(b(o + 11.1), "n02", "frame", (0.5, 0.5, 1.0), (0.45, 0.48, 1.07), "warm", ("pulse",), 0.5, "(ריקודים עם ספרי התורה)"))
+    add(S(b(o + 14.25), "n06", "full", WIDE, (0.40, 0.45, 0.60), "cool", (), 1.0, "לפתע הרבי בליבו"))
     if v == 0:
-        add(S(b(o + 21.0), "g02", "frame", (0.5, 0.40, 1.0), (0.45, 0.38, 1.07), "cool", (), 0.7, "כל החסידים היו מאוד עצובים"))
-        add(S(b(o + 24.5), "g02", "full", (0.66, 0.42, 0.62), (0.71, 0.40, 0.50), "cool", (), 0.6, "(הילד מביט באביו)"))
+        add(S(b(o + 21.0), "n05", "full", WIDE, (0.56, 0.45, 0.68), "cool", (), 0.7, "כל החסידים היו מאוד עצובים (האב מרגיע את הילד)"))
+        add(S(b(o + 24.5), "n06", "full", (0.75, 0.45, 0.55), (0.70, 0.42, 0.48), "cool", (), 0.6, "(חסידים מודאגים)"))
     else:
-        add(S(b(o + 21.0), "g02", "full", (0.40, 0.36, 0.80), (0.30, 0.34, 0.60), "cool", (), 0.7, "כל החסידים היו מאוד עצובים"))
-        add(S(b(o + 24.5), "g02", "frame", (0.5, 0.40, 1.0), (0.62, 0.38, 1.08), "cool", (), 0.6, "(הילד מביט באביו)"))
-    add(S(b(o + 27.75), "g05", "frame", (0.5, 0.40, 1.0), (0.55, 0.36, 1.07), "cool", ("leaves",), 0.7, "רוצים את הרבי במהרה לראות"))
-    add(S(b(o + 31.4), "g05", "full", (0.50, 0.34, 0.92), (0.57, 0.38, 0.52), "cool", ("leaves",), 0.6, "(חלונות 770)"))
+        add(S(b(o + 21.0), "n06", "frame", (0.5, 0.5, 1.0), (0.42, 0.46, 1.08), "cool", (), 0.7, "כל החסידים היו מאוד עצובים"))
+        add(S(b(o + 24.5), "n05", "full", (0.62, 0.42, 0.55), (0.66, 0.42, 0.46), "cool", (), 0.6, "(הילד מביט באביו)"))
+    add(S(b(o + 27.75), "n04", "full", WIDE, (0.72, 0.40, 0.60), "cool", (), 0.7, "רוצים את הרבי במהרה לראות"))
+    add(S(b(o + 31.4), "n11", "full", WIDE, (0.56, 0.52, 0.55), "cool", ("leaves",), 0.6, "(חלונות 770)"))
     # ---- chorus ----
-    add(S(b(o + 34.5), "g03", "frame", (0.5, 0.42, 1.0), (0.45, 0.40, 1.07), "warm", ("glow",), 0.6, "כולם מתפללים לרפואתו"))
-    add(S(b(o + 38.6), "g04", "frame", (0.5, 0.38, 1.0), (0.60, 0.33, 1.08), "warm", ("glow",), 0.6, "מתי נראה אותו בתפילתו"))
-    add(S(b(o + 42.3), "g08", "full", (0.55, 0.34, 0.94), (0.66, 0.42, 0.58), "warm", ("leaves",), 0.6, "כולם מחכים לרבי שיבוא"))
-    # "מתי, מתי, עד מתי" – quick cuts on the beat
+    add(S(b(o + 34.5), "n08", "full", WIDE, (0.55, 0.55, 0.68), "warm", ("glow",), 0.6, "כולם מתפללים לרפואתו"))
+    add(S(b(o + 38.6), "n10", "full", (0.40, 0.50, 0.85), (0.62, 0.45, 0.58), "warm", ("glow",), 0.6, "מתי נראה אותו בתפילתו (מקומו של הרבי)"))
+    add(S(b(o + 42.3), "n12", "full", WIDE, (0.45, 0.50, 0.68), "warm", ("leaves",), 0.6, "כולם מחכים לרבי שיבוא"))
     q = b(o + 46.6)
-    cuts = [("g03", (0.27, 0.40, 0.55), (0.25, 0.38, 0.47)),
-            ("g04", (0.55, 0.36, 0.60), (0.57, 0.34, 0.50)),
-            ("p_worry", (0.62, 0.48, 0.55), (0.64, 0.46, 0.46)),
-            ("g05", (0.56, 0.36, 0.55), (0.57, 0.38, 0.42))]
+    cuts = [("n07", WIDE, (0.50, 0.58, 0.62)),
+            ("n09", WIDE, (0.50, 0.45, 0.70)),
+            ("n05", (0.68, 0.45, 0.55), (0.70, 0.45, 0.46)),
+            ("n04", (0.25, 0.45, 0.55), (0.25, 0.42, 0.46))]
     if v == 1:
-        cuts = [("g02", (0.30, 0.34, 0.58), (0.28, 0.32, 0.48)),
-                ("g04", (0.62, 0.30, 0.55), (0.64, 0.30, 0.46)),
-                ("g03", (0.62, 0.40, 0.55), (0.64, 0.38, 0.46)),
-                ("g08", (0.70, 0.45, 0.50), (0.70, 0.46, 0.40))]
+        cuts = [("n09", (0.40, 0.50, 0.70), (0.50, 0.45, 0.60)),
+                ("n07", (0.50, 0.45, 0.70), (0.50, 0.40, 0.55)),
+                ("n04", (0.75, 0.40, 0.55), (0.75, 0.38, 0.46)),
+                ("n12", (0.66, 0.58, 0.55), (0.68, 0.58, 0.46))]
     for i, (src, a, bb) in enumerate(cuts):
         add(S(round(q + i * 3 * BEAT, 3), src, "full", a, bb, "warm", ("pulse",), 0.12, "מתי, מתי, עד מתי"))
     # ---- verse 2: the miracle ----
-    add(S(b(o + 51.6), "g06", "frame", (0.5, 0.42, 1.0), (0.5, 0.38, 1.08), "gold", ("glow", "sparkle"), 0.5, "בראש חודש כסלו קרה הנס"))
-    add(S(b(o + 53.6), "g08", "full", (0.62, 0.38, 0.70), (0.70, 0.49, 0.30), "gold", ("glow",), 0.5, "(המצלמה מתקרבת לדלתות 770)"))
-    # THE REAL PHOTO – starts on the beat just before 0:56 and is fully visible by 0:56
-    p = b(o + PHOTO_T) if v == 1 else 55.83
-    add(S(p, "real_clean", "full", (0.50, 0.50, 1.00), (0.52, 0.44, 0.84), "none", (), "white", "יצא הרבי מחדרו פעם ראשונה (התמונה האמיתית)"))
-    add(S(b(p + 4.0), "real_panel", "frame", (0.5, 0.45, 1.0), (0.5, 0.43, 1.03), "none", (), 0.9, "יצא הרבי מחדרו פעם ראשונה"))
-    add(S(b(o + 63.5), "g07", "frame", (0.5, 0.42, 1.0), (0.55, 0.40, 1.07), "warm", ("sparkle", "glow"), 0.9, "אל החסידים משבע מאות שבעים"))
-    add(S(b(o + 66.6), "s04", "frame", (0.5, 0.40, 1.0), (0.5, 0.35, 1.06), "warm", ("leaves", "sparkle"), 0.6, "אל החסידים משבע מאות שבעים (770)"))
+    add(S(b(o + 51.6), "n13", "full", (0.40, 0.48, 0.75), (0.38, 0.42, 0.55), "gold", ("glow", "sparkle"), 0.5, "בראש חודש כסלו קרה הנס", "ראש חודש כסלו"))
+    add(S(b(o + 53.6), "n15", "full", WIDE, (0.52, 0.56, 0.36), "gold", ("glow",), 0.5, "(המצלמה מתקרבת לדלת 770)"))
+    # THE REAL PHOTO (storyboard panel 16)
+    p = 55.83 if v == 0 else b(o + PHOTO_T)
+    add(S(p, "real_clean", "full", (0.50, 0.50, 1.00), (0.52, 0.44, 0.82), "none", (), "white", "יצא הרבי מחדרו פעם ראשונה – התמונה האמיתית"))
+    add(S(b(p + 4.1), "real_clean", "full", (0.52, 0.44, 0.82), (0.50, 0.50, 1.00), "none", (), 0.0, "(התמונה האמיתית – תנועה חזרה)"))
+    add(S(b(o + 63.5), "n14", "full", WIDE, (0.60, 0.50, 0.68), "warm", ("sparkle", "glow"), 0.9, "אל החסידים משבע מאות שבעים"))
+    add(S(b(o + 66.6), "n20", "full", WIDE, (0.50, 0.40, 0.62), "warm", ("leaves", "sparkle"), 0.6, "(ההמון מול 770)"))
     if v == 0:
-        add(S(b(o + 69.5), "s06", "frame", (0.5, 0.42, 1.0), (0.45, 0.40, 1.07), "warm", ("sparkle", "pulse"), 0.6, "כולם כל כך שמחים, שרים ורוקדים"))
-        add(S(b(o + 72.6), "g10", "full", (0.50, 0.35, 0.92), (0.40, 0.34, 0.66), "warm", ("sparkle", "pulse"), 0.5, "שרים ורוקדים"))
+        add(S(b(o + 69.5), "n17", "full", WIDE, (0.36, 0.45, 0.68), "warm", ("sparkle", "pulse"), 0.6, "כולם כל כך שמחים, שרים ורוקדים"))
+        add(S(b(o + 72.6), "n18", "full", (0.38, 0.50, 0.80), (0.62, 0.50, 0.80), "warm", ("sparkle", "pulse"), 0.5, "שרים ורוקדים"))
     else:
-        add(S(b(o + 69.5), "g10", "frame", (0.5, 0.42, 1.0), (0.55, 0.40, 1.07), "warm", ("sparkle", "pulse"), 0.6, "כולם כל כך שמחים, שרים ורוקדים"))
-        add(S(b(o + 72.6), "s06", "full", (0.50, 0.32, 0.90), (0.40, 0.34, 0.62), "warm", ("sparkle", "pulse"), 0.5, "שרים ורוקדים"))
+        add(S(b(o + 69.5), "n18", "full", (0.62, 0.50, 0.80), (0.40, 0.50, 0.80), "warm", ("sparkle", "pulse"), 0.6, "כולם כל כך שמחים, שרים ורוקדים"))
+        add(S(b(o + 72.6), "n17", "frame", (0.5, 0.5, 1.0), (0.42, 0.46, 1.08), "warm", ("sparkle", "pulse"), 0.5, "שרים ורוקדים"))
     # ---- chorus (joyful, after the miracle) ----
-    add(S(b(o + 75.6), "g11", "frame", (0.5, 0.42, 1.0), (0.5, 0.38, 1.07), "warm", ("sparkle", "pulse", "leaves"), 0.6, "פזמון – כולם מתפללים (ריקודי הודיה)"))
-    add(S(b(o + 79.3), "g04", "full" if v == 0 else "frame", (0.52, 0.34, 0.70) if v == 0 else (0.5, 0.4, 1.0), (0.58, 0.30, 0.55) if v == 0 else (0.55, 0.36, 1.06), "gold", ("glow",), 0.6, "פזמון – מתי נראה אותו בתפילתו (תהילים, זיכרון)"))
-    add(S(b(o + 83.0), "g08", "frame" if v == 0 else "full", (0.5, 0.40, 1.0) if v == 0 else (0.50, 0.33, 0.94), (0.52, 0.38, 1.06) if v == 0 else (0.60, 0.35, 0.66), "warm", ("leaves", "sparkle"), 0.6, "פזמון – כולם מחכים לרבי שיבוא (770)"))
+    add(S(b(o + 75.6), "n19", "full", WIDE, (0.50, 0.45, 0.68), "warm", ("sparkle", "pulse", "leaves"), 0.6, "פזמון – ריקוד הילדים"))
+    add(S(b(o + 79.3), "n08", "full", (0.55, 0.50, 0.75), (0.50, 0.50, 0.85), "gold", ("glow",), 0.6, "פזמון – מתי נראה אותו בתפילתו (תהילים – זיכרון חמים)"))
+    add(S(b(o + 83.0), "n12" if v == 0 else "n20", "full", WIDE, (0.48, 0.48, 0.70) if v == 0 else (0.55, 0.42, 0.62), "warm", ("leaves", "sparkle"), 0.6, "פזמון – כולם מחכים לרבי (770)"))
     q = b(o + 86.6)
-    joy = [("g10", (0.30, 0.42, 0.52), (0.32, 0.40, 0.44)),
-           ("s06", (0.45, 0.36, 0.60), (0.47, 0.34, 0.50)),
-           ("g11", (0.50, 0.30, 0.82), (0.50, 0.30, 0.70)),
-           ("g07", (0.45, 0.35, 0.62), (0.47, 0.33, 0.52))]
+    joy = [("n17", (0.38, 0.45, 0.62), (0.36, 0.43, 0.52)),
+           ("n18", (0.50, 0.50, 0.70), (0.55, 0.48, 0.60)),
+           ("n19", (0.50, 0.48, 0.70), (0.50, 0.45, 0.58)),
+           ("n14", (0.62, 0.48, 0.62), (0.64, 0.46, 0.52))]
     if v == 1:
-        joy = joy[1:] + joy[:1]
+        joy = joy[2:] + joy[:2]
     for i, (src, a, bb) in enumerate(joy):
         add(S(round(q + i * 4 * BEAT, 3), src, "full", a, bb, "warm", ("pulse", "sparkle"), 0.12, "פזמון – מתי, מתי (שמחה)"))
-    return shots
+    return sh
 
 
 def build():
-    shots = pass_one(0.0, 0) + pass_one(PASS, 1)
-    # cut the second pass's last chorus short for the ending
+    shots = one_pass(0.0, 0) + one_pass(PASS, 1)
     shots = [s for s in shots if s["t"] < b(183.5)]
-    shots.append(S(b(183.5), "g12", "frame", (0.5, 0.45, 1.0), (0.5, 0.43, 1.06), "warm", ("leaves", "sparkle", "glow"), 0.9, "סיום – ראש חודש כסלו, יום של הודיה ושמחה"))
-    shots.append(S(b(189.0), "banner", "banner", None, None, "warm", ("leaves", "sparkle"), 0.9, "באנר הסיום"))
-    shots.append(S(b(192.6), "yechi", "card", None, None, "warm", ("sparkle",), 1.0, "יחי אדוננו מורנו ורבינו מלך המשיח לעולם ועד!"))
+    shots.append(S(b(183.5), "n20", "full", (0.5, 0.42, 0.62), (0.5, 0.48, 0.9), "warm", ("leaves", "sparkle", "glow"), 0.9,
+                   "סיום – 770 בשמחה", "ראש חודש כסלו\nיום של הודיה ושמחה!"))
+    shots.append(S(b(190.4), "yechi", "card", None, None, "warm", ("sparkle",), 1.2, "יחי אדוננו מורנו ורבינו מלך המשיח לעולם ועד!"))
     return sorted(shots, key=lambda s: s["t"])
 
 
@@ -132,6 +132,7 @@ END = 198.0
 TITLE = ("ראש חודש כסלו תשל״ח", "סיפור של תפילה, ציפייה ונס")
 TITLE_T = (1.2, 6.9)
 CLOSING = "יחי אדוננו מורנו ורבינו\nמלך המשיח לעולם ועד!"
+CARD_BG = "n20"
 
 if __name__ == "__main__":
     for s in build():

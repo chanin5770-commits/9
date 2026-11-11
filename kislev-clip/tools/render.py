@@ -155,7 +155,7 @@ _card = {}
 _title = {}
 def render_card(shot, u, t):
     if not _card:
-        src = load("g08")
+        src = load(TL.CARD_BG)
         crop = src.crop((0, 0, src.width, int(src.width * 9 / 16))).resize((W, H), Image.BILINEAR)
         bg = crop.resize((W // 6, H // 6)).filter(ImageFilter.GaussianBlur(4)).resize((W, H), Image.BILINEAR)
         _card["bg"] = to_np(bg) * 0.38
@@ -328,6 +328,25 @@ def title_overlay(t):
     k = min(ease((t - t0) / 1.0), ease((t1 - t) / 0.9))
     return _title["title"], k
 
+_caps = {}
+def caption_layer(text):
+    if text not in _caps:
+        layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        lines = text.split("\n")
+        f = ImageFont.truetype(FONT_TITLE, 120 if len(lines) == 1 else 112)
+        y = H * (0.66 if len(lines) == 1 else 0.30)
+        for ln in lines:
+            bb = d.textbbox((0, 0), ln, font=f, direction="rtl", language="he")
+            x = (W - (bb[2] - bb[0])) / 2 - bb[0]
+            d.text((x + 4, y + 6), ln, font=f, fill=(35, 12, 0, 200), direction="rtl", language="he")
+            d.text((x, y), ln, font=f, fill=(252, 232, 170, 255), direction="rtl", language="he")
+            y += 165
+        a = np.asarray(layer, np.float32) / 255
+        glow = np.asarray(layer.filter(ImageFilter.GaussianBlur(26)), np.float32)[..., 3:] / 255
+        _caps[text] = (a[..., :3], a[..., 3:], glow)
+    return _caps[text]
+
 def compose(t):
     ids = active(t)
     out = None
@@ -338,7 +357,7 @@ def compose(t):
         if out is None:
             out = img
             continue
-        k = ease((t - start) / tin_d)
+        k = ease((t - start) / max(tin_d, 1e-3))
         if s["tin"] == "white":
             # previous shot blooms to white, then the photo emerges from the light
             if k < 0.5:
@@ -360,6 +379,14 @@ def compose(t):
         base = Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8)).convert("RGBA")
         draw_leaves(base, t, la)
         out = np.asarray(base.convert("RGB"), np.float32) / 255
+    for i in ids:
+        if SHOTS[i].get("text"):
+            st, en, td = shot_window(i)
+            kt = min(ease((t - SHOTS[i]["t"] - 0.3) / 0.8), ease((en - t - 0.2) / 0.6))
+            if kt > 0:
+                rgb, a, glow = caption_layer(SHOTS[i]["text"])
+                out = out * (1 - glow * 0.5 * kt)
+                out = out * (1 - a * kt) + rgb * a * kt
     tt, k = title_overlay(t)
     if tt is not None and k > 0:
         rgb, a, glow = tt
