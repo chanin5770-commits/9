@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Shot list for the Rosh Chodesh Kislev 5738 clip – version 2, built on the
-20-panel character storyboard (assets/source/storyboard-20.png, panels n01–n20).
+20-panel storyboard (assets/source/storyboard-20-realistic.png – the realistic version of storyboard-20.png; panels n01–n20).
 Panel 16 in the storyboard is the slot for the real photo of the Rebbe; the
 clip uses the real black-and-white photo (real_clean) there.
 

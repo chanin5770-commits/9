@@ -20,9 +20,9 @@
 
 ---
 
-## 2. טבלת שוטים – הסבב הראשון (גרסה 2, הדמויות החדשות)
+## 2. טבלת שוטים – הסבב הראשון (גרסה 3, הדמויות הריאליסטיות)
 
-המספרים הם הפאנלים בסטוריבורד בן 20 הפאנלים (`assets/source/storyboard-20.png`).
+המספרים הם הפאנלים בסטוריבורד בן 20 הפאנלים (`assets/source/storyboard-20-realistic.png`, אותן קומפוזיציות כמו `storyboard-20.png` בסגנון ריאליסטי).
 **הסבב השני** (1:33.5–3:03.7) חוזר על אותו סדר בתוספת 93.5 שניות, עם מסגורים ותנועות מצלמה אחרים. התמונה האמיתית מופיעה בו שוב ב־**2:29.5**.
 
 | זמן | מילים (לפי הסדר) | פאנל | מה רואים | תנועת מצלמה | אווירה |
@@ -58,7 +58,7 @@
 
 ## 3. גיליון דמויות (לפי הסטוריבורד החדש)
 
-**הילד**: כבן 5–6, שיער חום קצר, עיניים כחולות גדולות, כיפה שחורה וחולצה לבנה. **פאות קצרות מאוד, צמודות לראש, לא יורדות מתחת לאמצע האוזן.**
+**הילד**: כבן 6–7, שיער חום כהה קצר, כיפה שחורה וחולצה לבנה. **פאות קצרות מאוד, צמודות לראש, לא יורדות מתחת לאמצע האוזן.**
 
 **האבא**: כבן 35, זקן חום מלא ומטופח, כובע חסידי שחור, חליפה שחורה וחולצה לבנה. פאות קצרות מאחורי האוזן.
 
@@ -82,9 +82,9 @@ text, subtitles, watermark, numbers, low quality, flicker
 
 סגנון קבוע לכל השוטים (להדביק בתחילת כל פרומפט):
 ```
-Cinematic 3D animated feature-film style, soft expressive characters, warm golden light,
+Photorealistic cinematic film look, natural skin and fabric, warm golden light,
 autumn evening, shallow depth of field, 16:9, 25fps. Chabad chassidim: black fedora hats,
-black suits, white shirts, natural beards. Boy: brown short hair, blue eyes, black kippah,
+black suits, white shirts, natural beards. Boy: short dark-brown hair, black kippah,
 white shirt, VERY SHORT sidelocks that do not go below the middle of the ear. Only men and boys.
 ```
 יש להעלות לכלי את הפאנל המתאים מתוך `assets/panels_hd/` (n01–n20) כתמונת פתיחה (image-to-video), כדי שהדמויות יישארו זהות.
