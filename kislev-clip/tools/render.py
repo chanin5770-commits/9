@@ -162,7 +162,7 @@ def render_card(shot, u, t):
         layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         d = ImageDraw.Draw(layer)
         f = ImageFont.truetype(FONT_TITLE, 104)
-        lines = TL.CLOSING.split("\n")
+        lines = getattr(TL, "CLOSING", "").split("\n")
         y = H / 2 - 150
         for ln in lines:
             bb = d.textbbox((0, 0), ln, font=f, direction="rtl", language="he")

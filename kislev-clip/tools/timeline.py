@@ -124,14 +124,12 @@ def build():
     shots = [s for s in shots if s["t"] < b(183.5)]
     shots.append(S(b(183.5), "n20", "full", (0.5, 0.42, 0.62), (0.5, 0.48, 0.9), "warm", ("leaves", "sparkle", "glow"), 0.9,
                    "סיום – 770 בשמחה", "ראש חודש כסלו\nיום של הודיה ושמחה!"))
-    shots.append(S(b(190.4), "yechi", "card", None, None, "warm", ("sparkle",), 1.2, "יחי אדוננו מורנו ורבינו מלך המשיח לעולם ועד!"))
     return sorted(shots, key=lambda s: s["t"])
 
 
 END = 198.0
 TITLE = ("ראש חודש כסלו תשל״ח", "סיפור של תפילה, ציפייה ונס")
 TITLE_T = (1.2, 6.9)
-CLOSING = "יחי אדוננו מורנו ורבינו\nמלך המשיח לעולם ועד!"
 CARD_BG = "n20"
 
 if __name__ == "__main__":
