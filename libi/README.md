@@ -6,7 +6,8 @@
 
 | קובץ | מה זה |
 |---|---|
-| `dist/libi-malkat-haotiyot.mp4` | **הסרטון**: ‏1080×1920, ‏30fps, ‏H.264 ושמע AAC ‏256k, ‏3:02 |
+| `dist/libi-malkat-haotiyot-share.mp4` | **הסרטון לשיתוף** (59MB, מתאים לוואטסאפ) |
+| `dist/libi-malkat-haotiyot.mp4` | גרסת המאסטר באיכות מרבית (176MB, לא נשמרת ב-git; נוצרת ב-`node tools/render.cjs`): ‏1080×1920, ‏30fps, ‏H.264 ושמע AAC ‏256k, ‏3:02 |
 | `dist/cover.png` | תמונת שער (1080×1920) |
 | `TIMELINE.md` | ציר הזמן: סצנות, תמונות, כיתובים ומעברים |
 | `dist/timeline.json` | אותו ציר זמן כקובץ נתונים |
