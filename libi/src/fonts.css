@@ -1,0 +1,5 @@
+/* Fredoka (SIL Open Font License) — rounded, full Hebrew niqqud support */
+@font-face { font-family: 'Fredoka'; font-weight: 500; font-display: block; src: url(../assets/fonts/fredoka-hebrew-500-normal.woff2) format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family: 'Fredoka'; font-weight: 700; font-display: block; src: url(../assets/fonts/fredoka-hebrew-700-normal.woff2) format('woff2'); unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+@font-face { font-family: 'Fredoka'; font-weight: 500; font-display: block; src: url(../assets/fonts/fredoka-latin-500-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: 'Fredoka'; font-weight: 700; font-display: block; src: url(../assets/fonts/fredoka-latin-700-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }

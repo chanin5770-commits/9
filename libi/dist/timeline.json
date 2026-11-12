@@ -1,0 +1,245 @@
+[
+  {
+    "n": 1,
+    "start": 0,
+    "end": 6.92,
+    "kind": "opening",
+    "photo": null,
+    "word": null,
+    "transitionIn": null
+  },
+  {
+    "n": 2,
+    "start": 6.92,
+    "end": 13.07,
+    "kind": "photo",
+    "photo": "libi-sitting-flag",
+    "word": null,
+    "transitionIn": "sparkleZoom"
+  },
+  {
+    "n": 3,
+    "start": 13.07,
+    "end": 18.83,
+    "kind": "frame",
+    "photo": "libi-box-flag",
+    "word": null,
+    "transitionIn": "lightWipe"
+  },
+  {
+    "n": 4,
+    "start": 18.83,
+    "end": 25.19,
+    "kind": "frame",
+    "photo": "class-train-flag",
+    "word": null,
+    "transitionIn": "dissolve"
+  },
+  {
+    "n": 5,
+    "start": 25.19,
+    "end": 30.12,
+    "kind": "letter",
+    "photo": null,
+    "word": null,
+    "transitionIn": "sparkleZoom"
+  },
+  {
+    "n": 6,
+    "start": 30.12,
+    "end": 34.2,
+    "kind": "frame",
+    "photo": "libi-alphabet-pointer",
+    "word": null,
+    "transitionIn": "slideBounce"
+  },
+  {
+    "n": 7,
+    "start": 34.2,
+    "end": 40.75,
+    "kind": "frame",
+    "photo": "three-girls-bet-craft",
+    "word": null,
+    "transitionIn": "lightWipe"
+  },
+  {
+    "n": 8,
+    "start": 40.75,
+    "end": 47.04,
+    "kind": "object",
+    "photo": "libi-bakbuk",
+    "word": "בַּקְבּוּק",
+    "transitionIn": "sparkleZoom"
+  },
+  {
+    "n": 9,
+    "start": 47.04,
+    "end": 53.52,
+    "kind": "object",
+    "photo": "libi-beigele",
+    "word": "בֵּייגָלֶה",
+    "transitionIn": "lightWipe"
+  },
+  {
+    "n": 10,
+    "start": 53.52,
+    "end": 60.02,
+    "kind": "object",
+    "photo": "libi-barvaz",
+    "word": "בַּרְוָז",
+    "transitionIn": "slideBounce"
+  },
+  {
+    "n": 11,
+    "start": 60.02,
+    "end": 66.53,
+    "kind": "object",
+    "photo": "libi-baalei-chaim",
+    "word": "בַּעֲלֵי חַיִּים",
+    "transitionIn": "pageFlip"
+  },
+  {
+    "n": 12,
+    "start": 66.53,
+    "end": 72.59,
+    "kind": "object",
+    "photo": "libi-bayit",
+    "word": "בַּיִת",
+    "transitionIn": "doors"
+  },
+  {
+    "n": 13,
+    "start": 72.59,
+    "end": 79.09,
+    "kind": "object",
+    "photo": "libi-buba-bamba",
+    "word": "בֻּבַּת בַּמְבָּה",
+    "transitionIn": "heartIris"
+  },
+  {
+    "n": 14,
+    "start": 79.09,
+    "end": 85.57,
+    "kind": "object",
+    "photo": "libi-buot-sharing",
+    "word": "בּוּעוֹת",
+    "transitionIn": "dissolve"
+  },
+  {
+    "n": 15,
+    "start": 85.57,
+    "end": 98.15,
+    "kind": "carousel",
+    "photo": null,
+    "word": null,
+    "transitionIn": "sparkleZoom"
+  },
+  {
+    "n": 16,
+    "start": 98.15,
+    "end": 105.02,
+    "kind": "frame",
+    "photo": "libi-display-table",
+    "word": null,
+    "transitionIn": "lightWipe"
+  },
+  {
+    "n": 17,
+    "start": 105.02,
+    "end": 111.5,
+    "kind": "frame",
+    "photo": "class-train-items",
+    "word": null,
+    "transitionIn": "dissolve"
+  },
+  {
+    "n": 18,
+    "start": 111.5,
+    "end": 117.93,
+    "kind": "frame",
+    "photo": "class-craft-1",
+    "word": null,
+    "transitionIn": "dissolve"
+  },
+  {
+    "n": 19,
+    "start": 117.93,
+    "end": 123.97,
+    "kind": "frame",
+    "photo": "class-craft-3",
+    "word": null,
+    "transitionIn": "dissolve"
+  },
+  {
+    "n": 20,
+    "start": 123.97,
+    "end": 130.82,
+    "kind": "frame",
+    "photo": "body-letter-bet",
+    "word": null,
+    "transitionIn": "lightWipe"
+  },
+  {
+    "n": 21,
+    "start": 130.82,
+    "end": 140.85,
+    "kind": "polaroids",
+    "photo": null,
+    "word": null,
+    "transitionIn": "sparkleZoom"
+  },
+  {
+    "n": 22,
+    "start": 140.85,
+    "end": 146.05,
+    "kind": "frame",
+    "photo": "class-craft-2",
+    "word": null,
+    "transitionIn": "heartIris"
+  },
+  {
+    "n": 23,
+    "start": 146.05,
+    "end": 151.25,
+    "kind": "photo",
+    "photo": "libi-sitting-flag",
+    "word": null,
+    "transitionIn": "slideBounce"
+  },
+  {
+    "n": 24,
+    "start": 151.25,
+    "end": 157.99,
+    "kind": "ring",
+    "photo": null,
+    "word": null,
+    "transitionIn": "dissolve"
+  },
+  {
+    "n": 25,
+    "start": 157.99,
+    "end": 166.72,
+    "kind": "collage",
+    "photo": null,
+    "word": null,
+    "transitionIn": "sparkleZoom"
+  },
+  {
+    "n": 26,
+    "start": 166.72,
+    "end": 173.03,
+    "kind": "photo",
+    "photo": "libi-box-flag",
+    "word": null,
+    "transitionIn": "lightWipe"
+  },
+  {
+    "n": 27,
+    "start": 173.03,
+    "end": 182.16,
+    "kind": "ending",
+    "photo": null,
+    "word": null,
+    "transitionIn": "heartIris"
+  }
+]

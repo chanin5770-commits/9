@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ליבי – מלכת האותיות</title>
+<link rel="stylesheet" href="src/fonts.css">
+<style>
+  body{margin:0;background:#2a1020;color:#fff;font-family:Fredoka,sans-serif;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px}
+  canvas{height:min(80vh,1920px);aspect-ratio:9/16;border-radius:14px;box-shadow:0 8px 40px #0008;background:#fde}
+  .bar{display:flex;gap:10px;align-items:center;width:min(90vw,460px)} input{flex:1} button{font:inherit;padding:6px 16px;border-radius:20px;border:0;background:#f48fb1;color:#fff}
+</style></head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<div class="bar"><button id="play">▶</button><input id="seek" type="range" min="0" max="182.16" step="0.01" value="0"><span id="tc">0:00</span></div>
+<audio id="a" src="assets/song.mp3" preload="auto"></audio>
+<script src="src/beats.js"></script><script src="src/clip.js"></script>
+<script>
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d'), a = document.getElementById('a');
+  const seek = document.getElementById('seek'), tc = document.getElementById('tc'), btn = document.getElementById('play');
+  CLIP.load('').then(() => {
+    const loop = () => { const t = a.currentTime; CLIP.render(ctx, t); seek.value = t; tc.textContent = Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'); requestAnimationFrame(loop); };
+    loop();
+  });
+  btn.onclick = () => { if (a.paused) { a.play(); btn.textContent = '❚❚'; } else { a.pause(); btn.textContent = '▶'; } };
+  seek.oninput = () => { a.currentTime = +seek.value; };
+</script></body></html>
