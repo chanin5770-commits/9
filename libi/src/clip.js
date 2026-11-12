@@ -490,7 +490,7 @@
       letter3D(ctx, 'ב', W / 2, 860 + Math.sin(lt * 1.4) * 10, 520 * sc * (1 + 0.04 * pulse(t)),
         (1 - eOutCubic(bp)) * Math.PI * 4 + Math.sin(lt * 1.1) * 0.25 * bp, Math.sin(lt) * 0.04, clamp(bp * 3));
       burst(ctx, W / 2, 860, prog(lt, 3.4, 4.6), 16, 420, 2);
-      title(ctx, 'ליבי שלנו', W / 2, 1290, 150, prog(lt, 3.6, 4.3), 'gold');
+      title(ctx, 'ליבי לי', W / 2, 1290, 150, prog(lt, 3.6, 4.3), 'gold');
       title(ctx, 'מלכת האותיות', W / 2, 1460, 112, prog(lt, 4.4, 5.1), 'rose');
       pill(ctx, [[{ t: 'האות ', c: PAL.plum }, { t: 'ב׳', c: PAL.rose }]], W / 2, 1640, 84, prog(lt, 5.25, 5.9));
     },
@@ -657,7 +657,7 @@
       [[-1, 0], [1, 1.5]].forEach(([side, ph]) => {
         letter3D(ctx, 'ב', cx + side * 400, cy + 220 + Math.sin(lt * 1.6 + ph) * 18, 170 * eOutBack(op), Math.sin(lt * 1.3 + ph) * 0.5, side * 0.1, op, 0.6);
       });
-      title(ctx, 'כל הכבוד לליבי שלנו!', W / 2, 1250, 96, prog(lt, 1.6, 2.3), 'rose');
+      title(ctx, 'ליבי לי', W / 2, 1250, 112, prog(lt, 1.6, 2.3), 'rose');
       title(ctx, 'מלכת האותיות ב׳', W / 2, 1420, 124, prog(lt, 2.4, 3.1), 'gold');
       crown(ctx, W / 2, 1610, 120, 0, t, prog(lt, 3.2, 3.6));
       burst(ctx, W / 2, 1420, prog(lt, 2.6, 3.8), 18, 520, 7);
@@ -811,7 +811,27 @@
     ctx.save(); s.shot.draw(ctx, t - s.start, s.end - s.start, t); ctx.restore();
   }
 
+  /* "ב׳ קופצת": the moment the song sings "בֵּית" in the alphabet chant.
+   * Set the times (s) here; each one launches a big 3D ב jumping up over the picture. */
+  C.BET_JUMPS = [];
+  function betJump(ctx, t) {
+    for (const t0 of C.BET_JUMPS) {
+      const lt = t - t0 + 0.25;             // letter is at the top of its jump right on the word
+      if (lt < 0 || lt > 1.9) continue;
+      const up = prog(lt, 0, 0.3), down = prog(lt, 1.35, 1.9);
+      const y = lerp(H + 300, 820, eOutBack(up, 2.2)) + eInOut(down) * (H + 500 - 820);
+      const sq = Math.exp(-Math.max(0, lt - 0.28) * 9) * Math.sin(Math.max(0, lt - 0.28) * 24) * 0.12;
+      ctx.save(); ctx.fillStyle = `rgba(255,246,225,${0.35 * Math.exp(-Math.max(0, lt - 0.25) * 5) * (lt > 0.25 ? 1 : 0)})`; ctx.fillRect(0, 0, W, H); ctx.restore();
+      ctx.save(); ctx.translate(W / 2, y); ctx.scale(1 + sq, 1 - sq);
+      letter3D(ctx, 'ב', 0, 0, 640, (1 - eOutCubic(up)) * Math.PI * 2, Math.sin(lt * 6) * 0.05, 1, 1.2);
+      ctx.restore();
+      burst(ctx, W / 2, 820, prog(lt, 0.25, 1.3), 24, 620, 13);
+      pill(ctx, [[{ t: 'בֵּית', c: PAL.rose }, { t: '!', c: PAL.plum }]], W / 2, 1300, 110, prog(lt, 0.3, 0.7) * (1 - down));
+    }
+  }
+
   function overlay(ctx, t) {
+    betJump(ctx, t);
     if (isHigh(t)) {
       const bp = barPulse(t, 3);
       const i = beatIndex(t);
