@@ -9,7 +9,7 @@
 (function () {
   'use strict';
   const W = 1080, H = 1920;
-  const C = window.CLIP = { W, H, FPS: 30, DUR: 182.16 };
+  const C = window.CLIP = { W, H, FPS: 30, DUR: 204.74 };
   const BEATS = window.CLIP_BEATS || [];
 
   // ---------- palette ----------
@@ -44,13 +44,13 @@
     return bd < 0.25 ? best : t;
   };
   const pulse = (t, k = 7) => { const i = beatIndex(t); return i < 0 ? 0 : Math.exp(-(t - BEATS[i]) * k); };
-  const BAR0 = beatIndex(6.93) % 4;
+  const BAR0 = beatIndex(71.92) % 4;
   const barPulse = (t, k = 5) => {
     let i = beatIndex(t); if (i < 0) return 0;
     while (i >= 0 && (i % 4) !== BAR0) i--;
     return i < 0 ? 0 : Math.exp(-(t - BEATS[i]) * k);
   };
-  const HIGH = [[85.4, 111.5], [130.8, 151.2], [158, 181]];
+  const HIGH = [[39.0, 71.5], [103.5, 135.4], [159.8, 174.2], [183.3, 204]];
   const isHigh = t => HIGH.some(([a, b]) => t >= a && t < b);
 
   // ---------- assets ----------
@@ -523,7 +523,8 @@
     ['libi-barvaz', 'בַּרְוָז', [0.5, 0.4]], ['libi-baalei-chaim', 'בַּעֲלֵי חַיִּים', [0.5, 0.45]],
     ['libi-bayit', 'בַּיִת', [0.5, 0.45]], ['libi-buba-bamba', 'בֻּבַּת בַּמְבָּה', [0.5, 0.38]],
   ];
-  function carouselShot() {
+  function carouselShot(LIST = CAROUSEL, heading = 'כל האוצרות של ב׳') {
+    const CAROUSEL = LIST;
     return {
       kind: 'carousel',
       draw(ctx, lt, d, t) {
@@ -544,12 +545,14 @@
           if (it.z < 0.98) { ctx.fillStyle = `rgba(255,230,240,${0.35 * (1 - (it.z + 1) / 2)})`; }
         });
         crown(ctx, W / 2, 230 + Math.sin(lt * 2) * 6, 200, 0, t, prog(lt, 0, 0.5));
-        title(ctx, 'כל האוצרות של ב׳', W / 2, 330, 92, prog(lt, 0.2, 0.8), 'gold');
+        title(ctx, heading, W / 2, 330, 92, prog(lt, 0.2, 0.8), 'gold');
         const front = ((Math.round(rot / (Math.PI * 2 / CAROUSEL.length)) % CAROUSEL.length) + CAROUSEL.length) % CAROUSEL.length;
         const w = CAROUSEL[front][1];
+        if (w) {
         const first = w.match(/^.[֑-ׇ]*/)[0];
         const lp = f >= 1 ? 1 : (k === 0 ? prog(lt, 0.4, 0.9) : prog(f, 0.6, 1));
         pill(ctx, [[{ t: first, c: PAL.rose }, { t: w.slice(first.length), c: PAL.plum }]], W / 2, 1640, 84, lp);
+        }
         if (isHigh(t)) burst(ctx, W / 2, 900, clamp((lt - k * step) / 1.2), 10, 520, k);
       },
     };
@@ -579,29 +582,47 @@
     };
   }
 
-  const ringShot = {
-    kind: 'ring',
-    draw(ctx, lt, d, t) {
-      dreamBG(ctx, t, { letters: false, bokeh: 1.3 });
-      const cx = W / 2, cy = 860, R = 410;
-      for (let i = 0; i < 22; i++) {
-        const a = -Math.PI / 2 + i / 22 * Math.PI * 2 - lt * 0.12;
-        const p = prog(lt, i * 0.06, i * 0.06 + 0.5);
-        const isB = LETTERS[i] === 'ב';
-        const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
-        ctx.save(); ctx.globalAlpha = p; ctx.translate(x, y); ctx.scale(eOutBack(p) * (isB ? 1.35 + 0.15 * pulse(t) : 1), eOutBack(p) * (isB ? 1.35 + 0.15 * pulse(t) : 1));
-        ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI * 2); ctx.fillStyle = isB ? '#fff4d6' : 'rgba(255,255,255,0.85)'; ctx.fill();
-        ctx.lineWidth = isB ? 6 : 3; ctx.strokeStyle = isB ? goldGrad(ctx, -50, 50) : 'rgba(240,150,190,0.8)'; ctx.stroke();
-        ctx.font = FONT(700, 56); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'rtl';
-        ctx.fillStyle = isB ? PAL.rose : FLOAT_COLORS[i % FLOAT_COLORS.length]; ctx.fillText(LETTERS[i], 0, 2);
-        ctx.restore();
-      }
-      letter3D(ctx, 'ב', cx, cy, 480 * (1 + 0.04 * pulse(t)), Math.sin(lt * 0.9) * 0.4, 0, prog(lt, 0.3, 1.2));
-      crown(ctx, cx, 330 + Math.sin(lt * 1.4) * 6, 220, Math.sin(lt * 1.3) * 0.05, t, prog(lt, 0.8, 1.4));
-      title(ctx, 'מלכת האותיות', W / 2, 1460, 120, prog(lt, 1.4, 2.1), 'rose');
-      pill(ctx, [[{ t: 'מ־א׳ ועד ת׳ – ', c: PAL.plum }, { t: 'ליבי!', c: PAL.rose }]], W / 2, 1640, 72, prog(lt, 2.4, 3.0));
-    },
-  };
+  /* Alphabet ring for the chant "אָלֶף, בֵּית, גִּימֶל…": one letter lights up per beat,
+   * starting on the beat of "אָלֶף" (chantAt). */
+  function chantShot(chantAt, pillText) {
+    return {
+      kind: 'chant',
+      draw(ctx, lt, d, t) {
+        dreamBG(ctx, t, { letters: false, bokeh: 1.3 });
+        const cx = W / 2, cy = 860, R = 410;
+        const k0 = beatIndex(chantAt + 0.05);
+        let cur = -1;
+        for (let i = 0; i < 22; i++) { const bt = BEATS[k0 + i]; if (bt != null && t >= bt - 0.04) cur = i; }
+        const done = t > BEATS[k0 + 22] + 0.2;
+        for (let i = 0; i < 22; i++) {
+          const a = -Math.PI / 2 + i / 22 * Math.PI * 2 - lt * 0.08;
+          const p = prog(lt, i * 0.015, i * 0.015 + 0.35);
+          const isB = LETTERS[i] === 'ב';
+          const bt = BEATS[k0 + i];
+          const hit = bt != null ? Math.exp(-Math.max(0, t - bt + 0.04) * 4) * (t >= bt - 0.04 ? 1 : 0) : 0;
+          const lit = i <= cur || done;
+          const sc = eOutBack(p) * (1 + 0.55 * hit + (isB && lit ? 0.25 : 0));
+          const x = cx + Math.cos(a) * (R + hit * 30), y = cy + Math.sin(a) * (R + hit * 30);
+          ctx.save(); ctx.globalAlpha = p * (lit ? 1 : 0.55); ctx.translate(x, y); ctx.scale(sc, sc);
+          ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI * 2); ctx.fillStyle = lit ? '#fff4d6' : 'rgba(255,255,255,0.8)'; ctx.fill();
+          ctx.lineWidth = lit ? 6 : 3; ctx.strokeStyle = lit ? goldGrad(ctx, -50, 50) : 'rgba(240,150,190,0.8)'; ctx.stroke();
+          ctx.font = FONT(700, 56); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'rtl';
+          ctx.fillStyle = isB ? PAL.rose : lit ? PAL.plum : FLOAT_COLORS[i % FLOAT_COLORS.length]; ctx.fillText(LETTERS[i], 0, 2);
+          ctx.restore();
+          if (hit > 0.2) sparkle(ctx, x + 40, y - 40, 22 * hit, hit);
+        }
+        // centre: the letter being sung, big (ב gets the jump overlay instead)
+        const show = cur >= 0 && !done ? LETTERS[cur] : 'ב';
+        const hb = cur >= 0 && !done ? Math.exp(-Math.max(0, t - BEATS[k0 + cur]) * 5) : 0;
+        if (!(show === 'ב' && cur === 1 && !done)) {
+          letter3D(ctx, show, cx, cy, 420 * (1 + 0.12 * hb), Math.sin(lt * 0.9) * 0.3, 0, prog(lt, 0.2, 0.8));
+        }
+        crown(ctx, cx, 330 + Math.sin(lt * 1.4) * 6, 220, Math.sin(lt * 1.3) * 0.05, t, prog(lt, 0.3, 0.8));
+        title(ctx, 'מלכת האותיות', W / 2, 1460, 120, prog(lt, 0.4, 1.0), 'rose');
+        pill(ctx, [pillText], W / 2, 1640, 72, prog(t, BEATS[k0 + 22] || chantAt + 9, (BEATS[k0 + 22] || chantAt + 9) + 0.5));
+      },
+    };
+  }
 
   const COLLAGE = [
     ['libi-sitting-flag', [0.55, 0.3]], ['libi-barvaz', [0.5, 0.38]], ['libi-beigele', [0.48, 0.32]],
@@ -751,8 +772,7 @@
   // Section boundaries come from the song's structure analysis
   // (novelty peaks at ~6.9, 40.8, 85.6, 111.5, 130.8, 151.3, 158.0, 173.0 s).
   // =====================================================================
-  const objX = (start, i) => 40.75 + i * (85.57 - 40.75) / 7;
-  const fizz = (ctx, lt) => soapBubbles(ctx, lt, 22, 80, true);
+    const fizz = (ctx, lt) => soapBubbles(ctx, lt, 22, 80, true);
   const orbitBet = (ctx, lt, d, t) => {
     for (let i = 0; i < 14; i++) {
       const u = ((i / 14 + lt * 0.08) % 1);
@@ -768,39 +788,58 @@
   const bubbles = (ctx, lt) => soapBubbles(ctx, lt, 14, 75);
   const lettersFront = (ctx, lt, d, t) => floatLetters(ctx, t, 0.5);
 
+  const OBJ0 = 39.06, OBJ1 = 71.51;                       // objects block: chorus 1 up to the first chant
+  const objAt = i => OBJ0 + i * (OBJ1 - OBJ0) / 7;
+  const PORTRAITS = [
+    ['libi-sitting-flag', null, [0.55, 0.3]], ['libi-box-flag', null, [0.5, 0.35]], ['libi-barvaz', null, [0.5, 0.38]],
+    ['libi-bayit', null, [0.5, 0.42]], ['libi-buba-bamba', null, [0.5, 0.36]], ['libi-beigele', null, [0.5, 0.36]],
+  ];
+
+  // Song: "מַלְכַּת הָאוֹתִיּוֹת" (3:24). Sections measured from the audio:
+  // intro 0–17.3 · verse 1 17.3–39.1 · chorus 1 39.1–71.9 · alphabet chant 1 71.9–81.5 · verse 2 81.5–103.5
+  // chorus 2 103.5–135.9 · alphabet chant 2 135.9–145.5 · bridge 145.5–159.8 · final chorus 159.8–174.2 · outro 174.2–204.7
   const RAW = [
     [0, opening],
-    [6.92, photoShot('libi-sitting-flag', { focus: [0.55, 0.35], caption: ['היום ליבי היא', [{ t: 'מלכת האותיות!', c: PAL.rose }]], capAt: 0.5, z0: 1.0, z1: 1.1 }), 'sparkleZoom', 0.8],
-    [13.24, frameShot('libi-box-flag', { focus: [0.5, 0.42], caption: ['תיבת האוצרות של ב׳'] }), 'lightWipe', 0.7],
-    [18.83, frameShot('class-train-flag', { heading: 'כל הגן חוגג!', caption: [[{ t: 'המלכה מובילה את הרכבת', c: PAL.plum }]] }), 'dissolve', 0.8],
-    [25.19, letterCard, 'sparkleZoom', 0.7],
-    [30.16, frameShot('libi-alphabet-pointer', { heading: 'מ־א׳ ועד ת׳', caption: ['לומדת את כל האותיות'] }), 'slideBounce', 0.6],
-    [34.2, frameShot('three-girls-bet-craft', { focus: [0.5, 0.45], caption: [[{ t: 'יצרנו את האות ', c: PAL.plum }, { t: 'ב׳', c: PAL.rose }]] }), 'lightWipe', 0.7],
-    // ---- the ב objects ----
-    [objX(0, 0), objectShot('libi-bakbuk', 'בַּקְבּוּק', { focus: [0.45, 0.32], extra: fizz }), 'sparkleZoom', 0.7],
-    [objX(0, 1), objectShot('libi-beigele', 'בֵּייגָלֶה', { focus: [0.52, 0.36], extra: orbitBet }), 'lightWipe', 0.7],
-    [objX(0, 2), objectShot('libi-barvaz', 'בַּרְוָז', { focus: [0.5, 0.38], extra: wobbleHearts }), 'slideBounce', 0.6],
-    [objX(0, 3), objectShot('libi-baalei-chaim', 'בַּעֲלֵי חַיִּים', { focus: [0.5, 0.45], size: 78 }), 'pageFlip', 0.9],
-    [objX(0, 4), objectShot('libi-bayit', 'בַּיִת', { focus: [0.5, 0.45] }), 'doors', 1.0],
-    [objX(0, 5), objectShot('libi-buba-bamba', 'בֻּבַּת בַּמְבָּה', { focus: [0.52, 0.36], extra: hearts, size: 78 }), 'heartIris', 0.9],
-    [objX(0, 6), objectShot('libi-buot-sharing', 'בּוּעוֹת', { focus: [0.5, 0.45], extra: bubbles }), 'dissolve', 0.8],
-    // ---- chorus energy ----
-    [85.57, carouselShot(), 'sparkleZoom', 0.8],
-    [98.2, frameShot('libi-display-table', { heading: 'שולחן האות ב׳', caption: ['כל החפצים מתחילים ב־ב׳!'] }), 'lightWipe', 0.7],
-    [104.92, frameShot('class-train-items', { heading: 'רכבת המלכה', caption: ['כולנו יחד בשמחה!'] }), 'dissolve', 0.7],
-    // ---- breakdown: making the letter ----
-    [111.5, frameShot('class-craft-1', { heading: 'יוצרות את ב׳', caption: ['מדביקות ומקשטות'] }), 'dissolve', 1.0],
-    [117.93, frameShot('class-craft-3', { heading: 'ידיים קטנות', caption: ['עבודה מלכותית!'] }), 'dissolve', 1.0],
-    [123.97, frameShot('body-letter-bet', { focus: [0.5, 0.5], caption: [[{ t: 'עושות ', c: PAL.plum }, { t: 'ב׳', c: PAL.rose }, { t: ' עם הגוף!', c: PAL.plum }]] }), 'lightWipe', 0.9],
-    // ---- second energy ----
-    [130.82, polaroidShot(), 'sparkleZoom', 0.7],
-    [140.9, frameShot('class-craft-2', { heading: 'כל ילדה – אמנית', caption: ['האות ב׳ שלנו'] }), 'heartIris', 0.8],
-    [146.2, photoShot('libi-sitting-flag', { focus: [0.55, 0.3], z0: 1.12, z1: 1.25, extra: lettersFront }), 'slideBounce', 0.6],
-    [151.25, ringShot, 'dissolve', 1.0],
-    // ---- finale ----
-    [157.99, collageShot, 'sparkleZoom', 0.8],
-    [166.7, photoShot('libi-box-flag', { focus: [0.5, 0.33], caption: [[{ t: 'ליבי, את ', c: PAL.plum }, { t: 'מלכה אמיתית!', c: PAL.rose }]], z0: 1.04, z1: 1.18, extra: hearts }), 'lightWipe', 0.7],
-    [173.04, endingShot, 'heartIris', 1.0],
+    [7.43, photoShot('libi-sitting-flag', { focus: [0.55, 0.35], caption: ['היום ליבי היא', [{ t: 'מלכת האותיות!', c: PAL.rose }]], capAt: 0.6, z0: 1.0, z1: 1.1 }), 'sparkleZoom', 0.8],
+    [12.36, frameShot('libi-box-flag', { focus: [0.5, 0.42], caption: ['תיבת האוצרות של ב׳'] }), 'lightWipe', 0.7],
+    // ---- verse 1 ----
+    [17.25, frameShot('class-train-flag', { heading: 'כל הגן חוגג!', caption: [[{ t: 'המלכה מובילה את הרכבת', c: PAL.plum }]] }), 'dissolve', 0.8],
+    [23.57, letterCard, 'sparkleZoom', 0.7],
+    [29.9, frameShot('libi-alphabet-pointer', { heading: 'מ־א׳ ועד ת׳', caption: ['לומדת את כל האותיות'] }), 'slideBounce', 0.6],
+    [34.23, frameShot('three-girls-bet-craft', { focus: [0.5, 0.45], caption: [[{ t: 'יצרנו את האות ', c: PAL.plum }, { t: 'ב׳', c: PAL.rose }]] }), 'lightWipe', 0.7],
+    // ---- chorus 1: the ב objects ----
+    [objAt(0), objectShot('libi-bakbuk', 'בַּקְבּוּק', { focus: [0.45, 0.32], extra: fizz }), 'sparkleZoom', 0.7],
+    [objAt(1), objectShot('libi-beigele', 'בֵּייגָלֶה', { focus: [0.52, 0.36], extra: orbitBet }), 'lightWipe', 0.7],
+    [objAt(2), objectShot('libi-barvaz', 'בַּרְוָז', { focus: [0.5, 0.38], extra: wobbleHearts }), 'slideBounce', 0.6],
+    [objAt(3), objectShot('libi-baalei-chaim', 'בַּעֲלֵי חַיִּים', { focus: [0.5, 0.45], size: 78 }), 'pageFlip', 0.9],
+    [objAt(4), objectShot('libi-bayit', 'בַּיִת', { focus: [0.5, 0.45] }), 'doors', 1.0],
+    [objAt(5), objectShot('libi-buba-bamba', 'בֻּבַּת בַּמְבָּה', { focus: [0.52, 0.36], extra: hearts, size: 78 }), 'heartIris', 0.9],
+    [objAt(6), objectShot('libi-buot-sharing', 'בּוּעוֹת', { focus: [0.5, 0.45], extra: bubbles }), 'dissolve', 0.8],
+    // ---- alphabet chant 1 (ב jumps on "בֵּית") ----
+    [OBJ1, chantShot(71.91, [{ t: 'מ־א׳ ועד ת׳ – ', c: PAL.plum }, { t: 'ליבי!', c: PAL.rose }]), 'dissolve', 0.6],
+    // ---- verse 2 ----
+    [81.53, carouselShot(), 'sparkleZoom', 0.8],
+    [94.17, frameShot('libi-display-table', { heading: 'שולחן האות ב׳', caption: ['כל החפצים מתחילים ב־ב׳!'] }), 'lightWipe', 0.7],
+    [98.71, frameShot('class-train-items', { heading: 'רכבת המלכה', caption: ['כולנו יחד בשמחה!'] }), 'dissolve', 0.7],
+    // ---- chorus 2 ----
+    [103.53, frameShot('class-craft-1', { heading: 'יוצרות את ב׳', caption: ['מדביקות ומקשטות'] }), 'sparkleZoom', 0.7],
+    [110.7, frameShot('class-craft-3', { heading: 'ידיים קטנות', caption: ['עבודה מלכותית!'] }), 'lightWipe', 0.7],
+    [117.02, frameShot('body-letter-bet', { focus: [0.5, 0.5], caption: [[{ t: 'עושות ', c: PAL.plum }, { t: 'ב׳', c: PAL.rose }, { t: ' עם הגוף!', c: PAL.plum }]] }), 'heartIris', 0.8],
+    [123.33, polaroidShot(), 'sparkleZoom', 0.7],
+    // ---- alphabet chant 2 (ב jumps on "בֵּית") ----
+    [135.45, chantShot(135.85, [{ t: 'כל אות – ', c: PAL.plum }, { t: 'אוצר!', c: PAL.rose }]), 'dissolve', 0.6],
+    // ---- bridge ----
+    [145.03, frameShot('class-craft-2', { heading: 'כל ילדה – אמנית', caption: ['האות ב׳ שלנו'] }), 'heartIris', 0.8],
+    [149.05, photoShot('libi-sitting-flag', { focus: [0.55, 0.3], z0: 1.12, z1: 1.25, extra: lettersFront }), 'dissolve', 0.9],
+    [155.02, frameShot('libi-buot-back', { focus: [0.5, 0.5], caption: ['מחלקת בועות לחברות'] }), 'lightWipe', 0.8],
+    // ---- final chorus ----
+    [159.8, collageShot, 'sparkleZoom', 0.8],
+    [167.0, photoShot('libi-box-flag', { focus: [0.5, 0.33], caption: [[{ t: 'ליבי, את ', c: PAL.plum }, { t: 'מלכה אמיתית!', c: PAL.rose }]], z0: 1.04, z1: 1.18, extra: hearts }), 'lightWipe', 0.7],
+    // ---- outro ----
+    [174.17, carouselShot(PORTRAITS, 'מלכת האותיות'), 'sparkleZoom', 0.8],
+    [180.98, photoShot('libi-barvaz', { focus: [0.5, 0.38], z0: 1.0, z1: 1.1, extra: wobbleHearts }), 'slideBounce', 0.6],
+    [186.94, photoShot('libi-bakbuk', { focus: [0.45, 0.32], z0: 1.0, z1: 1.1, extra: fizz }), 'pageFlip', 0.9],
+    [194.12, endingShot, 'heartIris', 1.0],
   ];
   const SHOTS = RAW.map(([s, shot, tr, td], i) => ({ start: i === 0 ? 0 : snap(s), shot, tr, td: td || 0 }));
   SHOTS.forEach((s, i) => { s.end = i + 1 < SHOTS.length ? SHOTS[i + 1].start : C.DUR; });
@@ -813,12 +852,12 @@
 
   /* "ב׳ קופצת": the moment the song sings "בֵּית" in the alphabet chant.
    * Set the times (s) here; each one launches a big 3D ב jumping up over the picture. */
-  C.BET_JUMPS = [];
+  C.BET_JUMPS = [72.32, 136.25];   // "בֵּית" in chant 1 and chant 2 (measured from the vocal onsets)
   function betJump(ctx, t) {
     for (const t0 of C.BET_JUMPS) {
       const lt = t - t0 + 0.25;             // letter is at the top of its jump right on the word
-      if (lt < 0 || lt > 1.9) continue;
-      const up = prog(lt, 0, 0.3), down = prog(lt, 1.35, 1.9);
+      if (lt < 0 || lt > 1.35) continue;
+      const up = prog(lt, 0, 0.3), down = prog(lt, 0.85, 1.35);
       const y = lerp(H + 300, 820, eOutBack(up, 2.2)) + eInOut(down) * (H + 500 - 820);
       const sq = Math.exp(-Math.max(0, lt - 0.28) * 9) * Math.sin(Math.max(0, lt - 0.28) * 24) * 0.12;
       ctx.save(); ctx.fillStyle = `rgba(255,246,225,${0.35 * Math.exp(-Math.max(0, lt - 0.25) * 5) * (lt > 0.25 ? 1 : 0)})`; ctx.fillRect(0, 0, W, H); ctx.restore();

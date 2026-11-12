@@ -17,7 +17,7 @@ const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
-const FPS = 30, DUR = 182.16;
+const FPS = 30, DUR = 204.74;
 const WORKERS = Number(opt('workers', 4));
 const OUT = path.resolve(root, opt('out', 'dist/libi-malkat-haotiyot.mp4'));
 const WORK = path.join(root, 'dist/work');
@@ -65,7 +65,7 @@ async function main() {
     const dir = path.resolve(root, opt('stills-dir', 'dist/stills'));
     fs.mkdirSync(dir, { recursive: true });
     const { browser, page } = await openPage(port);
-    const list = stills ? stills.split(',').map(Number) : [181.0 - 3.6];
+    const list = stills ? stills.split(',').map(Number) : [198.4];
     for (const t of list) {
       const url = await page.evaluate(tt => window.__frame(tt, 'image/png'), t);
       const f = args.includes('--cover') ? path.join(root, 'dist/cover.png') : path.join(dir, `t${t.toFixed(2).padStart(7, '0')}.png`);
