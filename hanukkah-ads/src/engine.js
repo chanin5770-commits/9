@@ -275,6 +275,58 @@ function tap(ctx, t, t0, x, y) {
   ctx.restore();
 }
 
+/* phone with a real mobile screenshot (780px wide = 390 css px). scroll in css px. Returns a mapper css->canvas. */
+function phone(ctx, im, o) {
+  const { x, y, w = 560, scroll = 0, alpha = 1, scale = 1, rot = 0 } = o;
+  const sh = w * 844 / 390, bz = 22, PW = w + bz * 2, PH = sh + bz * 2;
+  const k = w / 390;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(scale, scale); ctx.globalAlpha *= alpha;
+  ctx.shadowColor = 'rgba(0,0,20,0.6)'; ctx.shadowBlur = 80; ctx.shadowOffsetY = 40;
+  const g = ctx.createLinearGradient(-PW / 2, -PH / 2, PW / 2, PH / 2); g.addColorStop(0, '#3a3f5c'); g.addColorStop(0.5, '#151827'); g.addColorStop(1, '#3a3f5c');
+  ctx.fillStyle = g; rrect(ctx, -PW / 2, -PH / 2, PW, PH, 70); ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(231,181,74,0.7)'; ctx.lineWidth = 4; rrect(ctx, -PW / 2 + 2, -PH / 2 + 2, PW - 4, PH - 4, 68); ctx.stroke();
+  ctx.save(); rrect(ctx, -w / 2, -sh / 2, w, sh, 50); ctx.clip();
+  ctx.fillStyle = '#FFF9F2'; ctx.fillRect(-w / 2, -sh / 2, w, sh);
+  const srcY = Math.max(0, Math.min(im.height - 1688, scroll * 2));
+  ctx.drawImage(im, 0, srcY, 780, Math.min(1688, im.height), -w / 2, -sh / 2, w, Math.min(1688, im.height) * w / 780);
+  if (o.overlay) o.overlay((cx, cy) => [-w / 2 + cx * k, -sh / 2 + (cy - srcY / 2) * k], k);
+  ctx.restore();
+  ctx.fillStyle = '#0d0f1a'; rrect(ctx, -70, -sh / 2 + 10, 140, 34, 17); ctx.fill();
+  ctx.restore();
+}
+function highlight(ctx, t, t0, x, y, w, h) {
+  if (t < t0) return; const p = clamp((t - t0) / 0.4); const pulse = 0.5 + 0.5 * Math.sin((t - t0) * 7);
+  ctx.save(); ctx.globalAlpha *= ease.out(p);
+  ctx.shadowColor = 'rgba(255,200,80,0.9)'; ctx.shadowBlur = 24;
+  ctx.strokeStyle = '#FFD45A'; ctx.lineWidth = 5 + pulse * 3; const m = 6 + (1 - ease.out(p)) * 30;
+  rrect(ctx, x - m, y - m, w + m * 2, h + m * 2, 14); ctx.stroke(); ctx.restore();
+}
+/* numbered step badge */
+function badge(ctx, n, x, y, s, a = 1) {
+  if (a <= 0) return;
+  ctx.save(); ctx.translate(x, y); ctx.scale(a, a);
+  ctx.shadowColor = 'rgba(0,0,20,0.5)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
+  ctx.fillStyle = '#EC5C93'; ctx.beginPath(); ctx.arc(0, 0, s, 0, 6.283); ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = `800 ${s * 1.15}px "Rubik", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(n), 0, s * 0.06);
+  ctx.restore();
+}
+/* speech bubble (cream, site palette) */
+function bubble(ctx, t, text, o) {
+  const { a, b, x = W / 2, y, size = 92 } = o; if (t < a || t > b + 0.4) return;
+  const pin = ease.back(clamp((t - a) / 0.5)), al = 1 - ease.in(clamp((t - b) / 0.4));
+  ctx.save(); ctx.translate(x, y); ctx.scale(pin, pin); ctx.globalAlpha *= al;
+  ctx.font = `800 ${size}px "Rubik", sans-serif`; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const lines = text.split('\n'); let mw = 0; lines.forEach((l) => { mw = Math.max(mw, ctx.measureText(l).width); });
+  const bw = mw + size * 1.2, bh = lines.length * size * 1.2 + size * 0.7;
+  ctx.shadowColor = 'rgba(0,0,20,0.5)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 14;
+  ctx.fillStyle = '#FFF9F2'; rrect(ctx, -bw / 2, -bh / 2, bw, bh, 60); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(bw * 0.18, bh / 2 - 4); ctx.lineTo(bw * 0.3, bh / 2 + 60); ctx.lineTo(bw * 0.04, bh / 2 - 4); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  lines.forEach((l, i) => { const ly = -bh / 2 + size * 0.35 + size * 1.2 * (i + 0.5); ctx.fillStyle = '#e24f97'; ctx.fillText(l, 0, ly + size * 0.05); ctx.fillStyle = '#ff8fc6'; ctx.lineWidth = size * 0.1; ctx.strokeStyle = '#fff'; ctx.strokeText(l, 0, ly); ctx.fillText(l, 0, ly); });
+  ctx.restore();
+}
+
 // ---------- typography ----------
 const FONT = '"Fredoka", "Rubik", "Noto Sans Hebrew", sans-serif';
 function fitSize(ctx, lines, size, maxW, weight) {
@@ -282,49 +334,63 @@ function fitSize(ctx, lines, size, maxW, weight) {
   for (; s > 30; s -= 2) { ctx.font = `${weight} ${s}px ${FONT}`; if (lines.every((l) => ctx.measureText(l).width <= maxW)) break; }
   return s;
 }
-/* Animated caption. a = appear time, b = disappear time. style: gold | cream | navy */
+/* Animated caption. a = appear time, b = disappear time.
+   style 'site' (default) copies the site's hero title: first line pink Rubik 800 with a white outline and stacked
+   pink shadows, following lines light blue with stacked blue shadows. Also: pink | sky | cream | body. */
+const SITE = {
+  pink: { fill: '#ff8fc6', stack: ['#e24f97', '#b8306f'], d: [0.05, 0.09], stroke: '#ffffff', sw: 0.075 },
+  sky: { fill: '#a9dcff', stack: ['#4f8fd8', '#2d5fa8'], d: [0.065, 0.13], stroke: null, sw: 0 },
+  cream: { fill: '#FFF9F2', stack: ['#2B4FA8', '#1C2F66'], d: [0.05, 0.09], stroke: null, sw: 0 },
+};
+function siteText(ctx, l, ly, s, kind) {
+  const k = SITE[kind];
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,20,0.55)'; ctx.shadowBlur = s * 0.22; ctx.shadowOffsetY = s * 0.14;
+  ctx.fillStyle = k.stack[1]; ctx.fillText(l, 0, ly + s * k.d[1]); ctx.restore();
+  ctx.fillStyle = k.stack[0]; ctx.fillText(l, 0, ly + s * k.d[0]);
+  if (k.stroke) { ctx.lineJoin = 'round'; ctx.strokeStyle = k.stroke; ctx.lineWidth = s * k.sw * 2; ctx.strokeText(l, 0, ly); }
+  ctx.fillStyle = k.fill; ctx.fillText(l, 0, ly);
+}
 function caption(ctx, t, text, o) {
-  const { a, b = 1e9, y, x = W / 2, size = 96, style = 'gold', maxW = 960, weight = 700, pill = false, lh = 1.18, anim = 'pop' } = o;
+  const { a, b = 1e9, y, x = W / 2, size = 96, maxW = 960, pill = false, lh = 1.2, anim = 'pop' } = o;
+  let style = o.style || 'site'; if (style === 'gold') style = 'site';
   if (t < a || t > b + 0.45) return;
   const pin = clamp((t - a) / 0.55), pout = clamp((t - b) / 0.4);
   const lines = text.split('\n');
-  const s = fitSize(ctx, lines, size, maxW, weight);
+  const fam = style === 'body' ? '"Noto Sans Hebrew", "Rubik", sans-serif' : '"Rubik", "Noto Sans Hebrew", sans-serif';
+  const sizes = lines.map((l, i) => (style === 'site' && i > 0 ? 0.82 : 1));
+  let s = size;
+  for (; s > 30; s -= 2) { ctx.font = `800 ${s}px ${fam}`; if (lines.every((l, i) => { ctx.font = `800 ${s * sizes[i]}px ${fam}`; return ctx.measureText(l).width <= maxW; })) break; }
   ctx.save();
-  ctx.font = `${weight} ${s}px ${FONT}`;
   ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const k = anim === 'pop' ? lerp(0.7, 1, ease.back(pin)) : 1;
-  const alpha = ease.out(pin) * (1 - ease.in(pout));
-  const dy = (1 - ease.out(pin)) * 40 - ease.in(pout) * 30;
-  ctx.globalAlpha = alpha;
-  ctx.translate(x, y + dy); ctx.scale(k, k);
-  const total = lines.length * s * lh;
+  ctx.globalAlpha = ease.out(pin) * (1 - ease.in(pout));
+  ctx.translate(x, y + (1 - ease.out(pin)) * 40 - ease.in(pout) * 30); ctx.scale(k, k);
+  const hs = lines.map((l, i) => s * sizes[i] * lh); const total = hs.reduce((q, v) => q + v, 0);
   if (pill) {
-    let mw = 0; lines.forEach((l) => { mw = Math.max(mw, ctx.measureText(l).width); });
-    const pw = mw + s * 1.1, ph = total + s * 0.55;
+    let mw = 0; lines.forEach((l, i) => { ctx.font = `800 ${s * sizes[i]}px ${fam}`; mw = Math.max(mw, ctx.measureText(l).width); });
+    const pw = mw + s * 1.1, ph = total + s * 0.6, rr = ph / 2 > 70 ? 46 : ph / 2;
     ctx.save(); ctx.shadowColor = 'rgba(0,0,20,0.5)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
-    ctx.fillStyle = pill === 'cream' ? 'rgba(255,250,238,0.94)' : 'rgba(8,20,70,0.82)';
-    rrect(ctx, -pw / 2, -ph / 2, pw, ph, ph / 2 > 70 ? 46 : ph / 2); ctx.fill(); ctx.restore();
-    ctx.strokeStyle = goldGrad(ctx, -pw / 2, -ph / 2, pw, ph); ctx.lineWidth = 4; rrect(ctx, -pw / 2 + 2, -ph / 2 + 2, pw - 4, ph - 4, ph / 2 > 70 ? 44 : ph / 2 - 2); ctx.stroke();
+    ctx.fillStyle = pill === 'cream' ? 'rgba(255,249,242,0.95)' : 'rgba(28,47,102,0.86)';
+    rrect(ctx, -pw / 2, -ph / 2, pw, ph, rr); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = goldGrad(ctx, -pw / 2, -ph / 2, pw, ph); ctx.lineWidth = 4; rrect(ctx, -pw / 2 + 2, -ph / 2 + 2, pw - 4, ph - 4, rr - 2); ctx.stroke();
   }
+  let yy = -total / 2;
   lines.forEach((l, i) => {
-    const ly = -total / 2 + s * lh * (i + 0.5);
-    const fill = style === 'gold' ? (() => { const g = ctx.createLinearGradient(0, ly - s / 2, 0, ly + s / 2); g.addColorStop(0, '#fff7d1'); g.addColorStop(0.45, '#ffd45a'); g.addColorStop(1, '#e9a020'); return g; })()
-      : style === 'navy' ? '#122a78' : '#fffaf0';
-    if (style !== 'navy') {
-      ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(6,14,52,0.92)'; ctx.lineWidth = s * 0.16; ctx.strokeText(l, 0, ly);
-      ctx.save(); ctx.shadowColor = style === 'gold' ? 'rgba(255,190,70,0.75)' : 'rgba(150,200,255,0.5)'; ctx.shadowBlur = s * 0.35;
-      ctx.fillStyle = fill; ctx.fillText(l, 0, ly); ctx.restore();
-    }
-    ctx.fillStyle = fill; ctx.fillText(l, 0, ly);
+    const fs = s * sizes[i]; const ly = yy + hs[i] / 2; yy += hs[i];
+    ctx.font = `800 ${fs}px ${fam}`;
+    if (style === 'body') {
+      ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(28,47,102,0.95)'; ctx.lineWidth = fs * 0.18; ctx.strokeText(l, 0, ly);
+      ctx.fillStyle = '#FFF9F2'; ctx.fillText(l, 0, ly);
+    } else siteText(ctx, l, ly, fs, style === 'site' ? (i === 0 ? 'pink' : 'sky') : style);
   });
   ctx.restore();
 }
 /* small label chip under a card */
 function chip(ctx, text, x, y, o = {}) {
-  const { size = 44, alpha = 1, scale = 1, bg = 'rgba(255,250,238,0.96)', fg = '#122a78' } = o;
+  const { size = 44, alpha = 1, scale = 1, bg = 'rgba(255,249,242,0.97)', fg = '#2E3A78' } = o;
   if (alpha <= 0) return;
   ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(scale, scale);
-  ctx.font = `700 ${size}px ${FONT}`; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `800 ${size}px "Noto Sans Hebrew", "Rubik", sans-serif`; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = ctx.measureText(text).width + size * 1.1, h = size * 1.55;
   ctx.shadowColor = 'rgba(0,0,20,0.45)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8;
   ctx.fillStyle = bg; rrect(ctx, -w / 2, -h / 2, w, h, h / 2); ctx.fill(); ctx.shadowColor = 'transparent';
@@ -365,4 +431,4 @@ function fan(ctx, ims, o) {
   });
 }
 
-window.ENGINE = { W, H, IMG, img, loadImages, clamp, lerp, prog, ease, rng, rrect, cover, background, stars, dust, burst, flash, sweep, vignette, card, cardH, cutout, pageTurn, tablet, tap, caption, chip, wall, fan, goldGrad, star4, FONT };
+window.ENGINE = { W, H, IMG, img, loadImages, clamp, lerp, prog, ease, rng, rrect, cover, background, stars, dust, burst, flash, sweep, vignette, card, cardH, cutout, pageTurn, tablet, tap, caption, chip, wall, fan, goldGrad, star4, FONT, phone, highlight, badge, bubble, siteText };

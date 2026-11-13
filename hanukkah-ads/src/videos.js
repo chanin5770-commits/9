@@ -289,11 +289,9 @@ const v3 = {
         const a = i / 10 * 6.283 + t * 0.35; const r = 420 + 30 * Math.sin(t + i);
         card(ctx, img('play/' + k), { x: W / 2 + Math.cos(a) * r, y: 1000 + Math.sin(a) * r * 1.25, w: 330, rot: Math.cos(a) * 0.15, border: 6, alpha: clamp((t - 0.2 - i * 0.08) / 0.4) * (1 - out) * 0.95 });
       });
-      ctx.save(); ctx.globalAlpha = 1 - out; ctx.font = `700 ${430}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.save(); ctx.globalAlpha = 1 - out; ctx.font = `800 ${430}px "Rubik", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const k = 1 + 0.05 * Math.sin(t * 6) * prog(t, 2.6, 3);
-      ctx.translate(W / 2, 1000); ctx.scale(k, k);
-      ctx.lineJoin = 'round'; ctx.lineWidth = 50; ctx.strokeStyle = 'rgba(6,14,52,0.95)'; ctx.strokeText(String(n), 0, 0);
-      ctx.shadowColor = 'rgba(255,190,70,0.9)'; ctx.shadowBlur = 80; ctx.fillStyle = goldGrad(ctx, -200, -200, 400, 400); ctx.fillText(String(n), 0, 0); ctx.restore();
+      ctx.translate(W / 2, 1000); ctx.scale(k, k); E.siteText(ctx, String(n), 0, 430, 'pink'); ctx.restore();
       burst(ctx, t, 2.6, W / 2, 1000, 5, 1.3);
       caption(ctx, t, 'משחקים דיגיטליים\nעל המסך!', { a: 0.4, b: c[0] - 0.15, y: 330, size: 104 });
       caption(ctx, t, 'הילדים יתלהבו!', { a: 2.8, b: c[0] - 0.15, y: 1640, size: 96, style: 'cream' });
@@ -492,8 +490,8 @@ let CUR = null, SNAP = (x) => x;
 async function init(id, beats) {
   CUR = VIDEOS[id]; CUR.beats = beats.beats; CUR.dur = beats.dur;
   SNAP = (x) => { let best = x, bd = 0.3; for (const b of beats.beats) { const d = Math.abs(b - x); if (d < bd) { bd = d; best = b; } } return best; };
-  await E.loadImages(imagesFor());
-  return { dur: CUR.dur, title: CUR.title, name: CUR.name };
+  await E.loadImages([...new Set([...imagesFor(), ...(CUR.images || [])])]);
+  return { dur: CUR.dur, title: CUR.title, name: CUR.name, audio: CUR.audio };
 }
 function draw(ctx, t) {
   const v = CUR;
@@ -504,5 +502,5 @@ function draw(ctx, t) {
   vignette(ctx, 0.5);
   if (t < 0.35) { ctx.fillStyle = `rgba(2,5,22,${1 - t / 0.35})`; ctx.fillRect(0, 0, W, H); }
 }
-window.ADS = { VIDEOS, init, draw };
+window.ADS = { VIDEOS, init, draw, H: { outro, slideshow, gameShow, book, deal, eq, musicNote, vis, float, GAMES, SONGS, WALL, P } };
 })();

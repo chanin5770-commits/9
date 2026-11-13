@@ -28,7 +28,7 @@ server.listen(0, '127.0.0.1', async () => {
     }
     await browser.close(); server.close(); return;
   }
-  const out = path.join(root, 'dist', `${info.name}.mp4`); const wav = path.join(root, 'assets/audio', id + '.wav');
+  const out = path.join(root, 'dist', `${info.name}.mp4`); const wav = path.join(root, 'assets/audio', info.audio + '.wav');
   const total = Math.round(info.dur * FPS);
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-', '-i', wav,
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '19', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
