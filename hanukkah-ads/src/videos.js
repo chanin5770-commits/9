@@ -135,9 +135,10 @@ const v1 = {
         card(ctx, img(n), { x, y: y + float(t, 1, i), w, rot: r, scale: p * (1 + out * 0.4), alpha: clamp(p * 2) * (1 - out), shine: prog(t, d + 0.6, d + 1.6) });
       });
       burst(ctx, t, 0.15, W / 2, 1030, 2);
-      caption(ctx, t, 'גננת,\nחנוכה שלך עומד\nלהיראות אחרת!', { a: 0.25, b: 2.75, y: 380, size: 104 });
-      caption(ctx, t, 'כל מה שאת צריכה לחנוכה –\nבמקום אחד!', { a: 2.9, b: c[0] - 0.1, y: 380, size: 92 });
+      caption(ctx, t, 'גננת,\nחנוכה שלך עומד\nלהיראות אחרת!', { a: 0.25, b: this.narr ? 3.55 : 2.75, y: 380, size: 104 });
+      if (!this.narr) caption(ctx, t, 'כל מה שאת צריכה לחנוכה –\nבמקום אחד!', { a: 2.9, b: c[0] - 0.1, y: 380, size: 92 });
     }
+    if (this.narr) caption(ctx, t, 'כל מה שאת צריכה לחנוכה –\nבמקום אחד!', { a: 3.7, b: 6.8, y: 320, size: 92 });
     // S2 reveal the world
     if (t >= c[0] - 0.3 && t < c[1] + 0.3) {
       const s = t - c[0];
@@ -147,7 +148,7 @@ const v1 = {
       const cp = ease.back(prog(s, 1.0, 1.8)), co = 1 - zoomIn;
       cutout(ctx, img('ui/uri'), { x: 220 - (1 - cp) * 400, y: 1880, h: 720, alpha: co, rot: Math.sin(t * 2) * 0.02 });
       cutout(ctx, img('ui/uriya'), { x: 860 + (1 - cp) * 400, y: 1880, h: 700, alpha: co, rot: -Math.sin(t * 2) * 0.02 });
-      caption(ctx, t, 'ברוכה הבאה\nלעולם החנוכה!', { a: c[0] + 0.3, b: c[0] + 3.9, y: 300, size: 108 });
+      caption(ctx, t, 'ברוכה הבאה\nלעולם החנוכה!', { a: this.narr ? 6.95 : c[0] + 0.3, b: c[0] + 3.9, y: 300, size: 108 });
       caption(ctx, t, 'עולם שלם של\nלמידה, חוויה ואור!', { a: c[0] + 4.0, b: c[1] - 0.6, y: 300, size: 100 });
     }
     // S3 richness of content
@@ -470,7 +471,8 @@ const v5 = {
   },
 };
 
-const VIDEOS = { v1, v2, v3, v4, v5 };
+const v1n = Object.assign(Object.create(v1), { id: 'v1n', name: 'chanukah-world-full-kit-narrated', title: 'כל עולם החנוכה – עם קריינות', audio: 'v1n', narr: true });
+const VIDEOS = { v1, v1n, v2, v3, v4, v5 };
 
 /* collect every image a video needs by dry-running its draw over a stub context */
 function imagesFor() {
