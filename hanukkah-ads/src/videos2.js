@@ -53,7 +53,7 @@ function scrollAt(keys, lt) {
 const v6 = {
   id: 'v6', name: 'chanukah-world-how-to-use', title: 'איך משתמשים באתר', audio: 'v6', theme: 'royal',
   images: STEPS.flatMap((s) => s.scr.map((x) => M(x[0]))),
-  get cuts() { const c = [6.2]; const step = (85 - 6.2) / STEPS.length; for (let i = 1; i <= STEPS.length; i++) c.push(6.2 + i * step); return c; },
+  get cuts() { const i0 = this.intro || 6.2; const c = [i0]; const step = (85 - i0) / STEPS.length; for (let i = 1; i <= STEPS.length; i++) c.push(i0 + i * step); return c; },
   draw(ctx, t, S) {
     const c = this.cuts.map(S);
     if (t < c[0] + 0.3) {
@@ -191,4 +191,10 @@ const v8 = Object.assign({ id: 'v8', name: 'parents-holiday-adventure', title: '
 const v8p = Object.assign({ id: 'v8p', name: 'parents-holiday-adventure-49', title: 'חופשת חנוכה הופכת להרפתקה (עם מחיר)', draw(ctx, t, S) { v8draw.call(this, ctx, t, S, true); } }, v8base);
 
 Object.assign(A.VIDEOS, { v6, v7, v7p, v8, v8p });
+/* narrated versions: same visuals (v6 gets a longer intro for the welcome line), own soundtrack */
+const narr = (base, id, extra = {}) => Object.assign(Object.create(base), { id, name: base.name + '-narrated', audio: id, narr: true }, extra);
+for (const k of ['v3', 'v4']) A.VIDEOS[k + 'n'] = narr(A.VIDEOS[k], k + 'n');
+A.VIDEOS.v2n = narr(A.VIDEOS.v2, 'v2n', { outroT: { l1: [0.25, 3.9], l2: [4.0, 6.9], h: 7.0, l3: [7.2, 9.0], l4: 9.1 } });
+A.VIDEOS.v5n = narr(A.VIDEOS.v5, 'v5n', { outroT: { l1: [0.25, 5.4], l2: [5.55, 9.8], h: 9.9, l3: [10.1, 11.8], l4: 11.9 } });
+Object.assign(A.VIDEOS, { v6n: narr(v6, 'v6n', { intro: 9.2 }), v7n: narr(v7, 'v7n'), v7pn: narr(v7p, 'v7pn'), v8n: narr(v8, 'v8n'), v8pn: narr(v8p, 'v8pn') });
 })();

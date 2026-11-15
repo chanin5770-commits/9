@@ -90,25 +90,27 @@ function eq(ctx, t, x, y, w, h, beats) {
 }
 
 /* shared ending: wall of materials -> site hero -> call to action */
+const OT0 = { l1: [0.25, 3.1], l2: [3.3, 6.3], h: 6.4, l3: [6.6, 8.9], l4: 9.0 };
+let OT = OT0;
 function outro(ctx, t, a, b, lines) {
-  const s = t - a;
-  const wz = lerp(1.35, 0.85, ease.inOut(prog(s, 0, 7)));
-  const wa = s < 6.4 ? 1 : lerp(1, 0.22, prog(s, 6.4, 7.4));
+  const s = t - a, h = OT.h;
+  const wz = lerp(1.35, 0.85, ease.inOut(prog(s, 0, h + 0.6)));
+  const wa = s < h ? 1 : lerp(1, 0.22, prog(s, h, h + 1));
   wall(ctx, t, WALL, { zoom: wz, alpha: wa, angle: -0.18, speed: 70 });
-  if (s < 7.4) { ctx.fillStyle = `rgba(4,10,40,${0.35 * prog(s, 3.2, 4)})`; ctx.fillRect(0, 0, W, H); }
-  caption(ctx, t, lines[0], { a: a + 0.25, b: a + 3.1, y: 330, size: 92, pill: true });
-  caption(ctx, t, lines[1], { a: a + 3.3, b: a + 6.3, y: 330, size: 90, pill: true });
-  const hp = ease.back(prog(s, 6.4, 7.3));
-  if (s > 6.3) {
-    card(ctx, img('ui/hero'), { x: W / 2, y: 930 + float(t, 0.4), w: 1000, scale: lerp(0.5, 1, hp) + (s - 6.4) * 0.006, alpha: clamp((s - 6.3) / 0.4), glow: 0.9, gold: true, shine: prog(s, 7.2, 8.4) });
-    burst(ctx, t, a + 6.5, W / 2, 930, 21, 1.1);
+  if (s < h + 1) { ctx.fillStyle = `rgba(4,10,40,${0.35 * prog(s, OT.l2[0] - 0.1, OT.l2[0] + 0.7)})`; ctx.fillRect(0, 0, W, H); }
+  caption(ctx, t, lines[0], { a: a + OT.l1[0], b: a + OT.l1[1], y: 330, size: 92, pill: true });
+  caption(ctx, t, lines[1], { a: a + OT.l2[0], b: a + OT.l2[1], y: 330, size: 90, pill: true });
+  const hp = ease.back(prog(s, h, h + 0.9));
+  if (s > h - 0.1) {
+    card(ctx, img('ui/hero'), { x: W / 2, y: 930 + float(t, 0.4), w: 1000, scale: lerp(0.5, 1, hp) + (s - h) * 0.006, alpha: clamp((s - h + 0.1) / 0.4), glow: 0.9, gold: true, shine: prog(s, h + 0.8, h + 2) });
+    burst(ctx, t, a + h + 0.1, W / 2, 930, 21, 1.1);
   }
-  caption(ctx, t, lines[2] || 'הגן שלך מוכן לחנוכה?', { a: a + 6.6, b: a + 8.9, y: 330, size: 92, pill: true });
-  caption(ctx, t, lines[3] || 'הצטרפי עכשיו\nלעולם החנוכה!', { a: a + 9.0, b: 1e9, y: 320, size: 104, pill: true });
-  const up = ease.back(prog(s, 7.2, 7.8));
-  if (s > 7.2) chip(ctx, 'chanili-hanukkah.sites.tab.bot', W / 2, 1450, { size: 46, scale: up, bg: 'rgba(8,20,70,0.92)', fg: '#ffe9a6' });
-  const lp = ease.back(prog(s, 7.6, 8.3));
-  if (s > 7.6) {
+  caption(ctx, t, lines[2] || 'הגן שלך מוכן לחנוכה?', { a: a + OT.l3[0], b: a + OT.l3[1], y: 330, size: 92, pill: true });
+  caption(ctx, t, lines[3] || 'הצטרפי עכשיו\nלעולם החנוכה!', { a: a + OT.l4, b: 1e9, y: 320, size: 104, pill: true });
+  const up = ease.back(prog(s, h + 0.8, h + 1.4));
+  if (s > h + 0.8) chip(ctx, 'chanili-hanukkah.sites.tab.bot', W / 2, 1450, { size: 46, scale: up, bg: 'rgba(8,20,70,0.92)', fg: '#ffe9a6' });
+  const lp = ease.back(prog(s, h + 1.2, h + 1.9));
+  if (s > h + 1.2) {
     const lg = img('ui/logo-hdr'); const lw = 560, lh = lw * lg.height / lg.width;
     ctx.save(); ctx.translate(W / 2, 1690); ctx.scale(lp, lp);
     ctx.shadowColor = 'rgba(0,0,20,0.5)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 14;
@@ -497,6 +499,7 @@ async function init(id, beats) {
 }
 function draw(ctx, t) {
   const v = CUR;
+  OT = Object.assign({}, OT0, v.outroT || {});
   background(ctx, t, v.theme, 0.6);
   v.draw(ctx, t, SNAP);
   dust(ctx, t, 60, 11, 0.8);

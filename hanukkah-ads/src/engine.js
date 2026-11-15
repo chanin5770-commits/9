@@ -351,6 +351,7 @@ function siteText(ctx, l, ly, s, kind) {
   ctx.fillStyle = k.fill; ctx.fillText(l, 0, ly);
 }
 function caption(ctx, t, text, o) {
+  if (window.__CAPLOG) { const k = text + '|' + o.a; if (!window.__CAPLOG[k]) window.__CAPLOG[k] = { text, a: o.a, b: o.b ?? 1e9 }; }
   const { a, b = 1e9, y, x = W / 2, size = 96, maxW = 960, pill = false, lh = 1.2, anim = 'pop' } = o;
   let style = o.style || 'site'; if (style === 'gold') style = 'site';
   if (t < a || t > b + 0.45) return;
