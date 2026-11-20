@@ -1,0 +1,6 @@
+photos/
+photos-src/
+out/
+audio/*.wav
+audio/*.mp3
+audio/*.npy

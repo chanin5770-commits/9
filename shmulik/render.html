@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><title>Render</title>
+<style>
+@font-face{font-family:'Heebo';font-weight:100 900;src:url(fonts/heebo-hebrew.woff2) format('woff2');unicode-range:U+0590-05FF,U+200C-2010,U+FB1D-FB4F;}
+@font-face{font-family:'Heebo';font-weight:100 900;src:url(fonts/heebo-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F;}
+html,body{margin:0;background:#000}canvas{display:block}
+</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="src/clip.js"></script>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+window.__ready=CLIP.load('');
+window.__frame=(t,type='image/jpeg',q=0.94)=>{CLIP.render(ctx,t);return cv.toDataURL(type,q);};
+</script></body></html>
