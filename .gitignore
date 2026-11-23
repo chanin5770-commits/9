@@ -6,3 +6,4 @@ hanukkah/work/
 hanukkah/output/*.mp4
 hanukkah/output/*.wav
 __pycache__/
+hanukkah/output/**/*.mp4
