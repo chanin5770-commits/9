@@ -1,3 +1,8 @@
 node_modules/
 dist/stills/
 dist/work/
+hanukkah/raw/
+hanukkah/work/
+hanukkah/output/*.mp4
+hanukkah/output/*.wav
+__pycache__/
