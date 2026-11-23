@@ -113,22 +113,39 @@ def stab_file(src, s0, dur):
                         '-vf', f'vidstabdetect=shakiness=6:accuracy=12:result={trf}', '-f', 'null', '-'], check=True)
     return trf
 
+def stab_source(src):
+    """whole-clip vidstab pass rendered once to a high-quality intermediate."""
+    d = os.path.join(WORK, 'stab'); os.makedirs(d, exist_ok=True)
+    out = os.path.join(d, f'{src}_stab.mp4')
+    if not os.path.exists(out):
+        trf = os.path.join(d, f'{src}.trf')
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src_path(src), '-vf', f'vidstabdetect=shakiness=6:accuracy=12:result={trf}',
+                        '-f', 'null', '-'], check=True)
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src_path(src), '-vf',
+                        f'vidstabtransform=input={trf}:smoothing=12:optzoom=1:zoomspeed=0.15:interpol=bicubic',
+                        '-c:v', 'libx264', '-preset', 'fast', '-crf', '14', '-pix_fmt', 'yuv420p', '-c:a', 'copy', out + '.tmp.mp4'], check=True)
+        os.replace(out + '.tmp.mp4', out)
+    return out
+
 class Reader:
     """Streams frames of one clip from ffmpeg at the source's native frame rate."""
-    def __init__(self, clip, pre):
+    def __init__(self, clip, pre, t_from=None):
         self.clip = clip
         info = probe(clip.src)
         self.fps = info['fps']
-        s_start = clip.src_time(-pre) - 0.05
+        rel = -pre if t_from is None else max(-pre, t_from - clip.t0)
+        s_start = clip.src_time(rel) - 0.05
         s_end = clip.src_time(clip.t1 - clip.t0 + pre) + 0.2
         s_start = max(0.0, s_start)
         self.s0 = s_start
         dur = s_end - s_start
         w, h = clip.pic
         vf = []
+        path = src_path(clip.src)
         if clip.stab:
-            trf = stab_file(clip.src, s_start, dur)
-            vf.append(f'vidstabtransform=input={trf}:smoothing=14:optzoom=1:zoomspeed=0.2:interpol=bicubic')
+            path = stab_source(clip.src)
+        if self.fps > 31 and clip.max_speed() >= 0.99 and not isinstance(clip.speed, list):
+            vf.append('fps=30'); self.fps = 30.0   # real-time playback of high-fps sources
         vf.append('hqdn3d=1.5:1.5:4:4')
         if clip.crop_x is not None:  # vertical crop from a landscape source
             cw = int(info['h'] * w / h) // 2 * 2
@@ -136,7 +153,7 @@ class Reader:
             vf.append(f'crop={cw}:{info["h"]}:{x}:0')
         vf.append(f'scale={w}:{h}:flags=lanczos')
         self.w, self.h = w, h
-        cmd = ['ffmpeg', '-v', 'error', '-ss', f'{s_start:.3f}', '-t', f'{dur:.3f}', '-i', src_path(clip.src),
+        cmd = ['ffmpeg', '-v', 'error', '-ss', f'{s_start:.3f}', '-t', f'{dur:.3f}', '-i', path,
                '-vf', ','.join(vf), '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-']
         self.p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=w * h * 3 * 2)
         self.idx = -1
@@ -446,7 +463,7 @@ def light_wipe(frame, p, angle=0.35):
     proj = (x / sw) * math.cos(angle) + (y / sh) * math.sin(angle)
     pos = -0.4 + p * (1.8)
     band = np.exp(-((proj - pos) / 0.09) ** 2) + 0.5 * np.exp(-((proj - pos) / 0.25) ** 2)
-    lay = np.dstack([band * 160, band * 225, band * 255]).clip(0, 255).astype(np.uint8)
+    lay = np.dstack([band * 105, band * 150, band * 175]).clip(0, 255).astype(np.uint8)
     return cv2.add(frame, cv2.resize(lay, (W, H)))
 
 # ----------------------------------------------------------------------------------------------
@@ -605,10 +622,12 @@ def draw_arc_arrow(frame, cx, cy, r, a0, a1, alpha=1.0, thick=8):
 # Audio
 # ----------------------------------------------------------------------------------------------
 _audio = {}
+AUDIO_FILTER = {}   # per-source ffmpeg audio filter (noise reduction etc.)
 def load_audio(name):
     if name not in _audio:
-        raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', src_path(name), '-vn', '-ac', '2', '-ar', str(SR),
-                              '-f', 'f32le', '-'], capture_output=True).stdout
+        af = AUDIO_FILTER.get(name, AUDIO_FILTER.get('*'))
+        raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', src_path(name), '-vn'] + (['-af', af] if af else []) +
+                             ['-ac', '2', '-ar', str(SR), '-f', 'f32le', '-'], capture_output=True).stdout
         _audio[name] = np.frombuffer(raw, np.float32).reshape(-1, 2).copy()
     return _audio[name]
 
@@ -819,6 +838,20 @@ def transition_blend(kind, A, B, p, cw, ch):
                 acc += zoom_frame(frm, 1 + 0.025 * i * amt, 0.5, 0.5).astype(np.float32)
             frm = (acc / 4).astype(np.uint8)
         return flash(frm, amt ** 3 * 0.6)
+    if kind == 'morph':  # full-screen portrait shrinks into the landscape window, then dissolves
+        e = ease(min(p / 0.75, 1))
+        x, y, ww, wh = window_rect(cw, ch, 16, 9)
+        s = 1 - (1 - wh / ch) * e
+        cy = ch / 2 + ((y + wh / 2) - ch / 2) * e
+        M = np.float32([[s, 0, cw / 2 - s * cw / 2], [0, s, cy - s * ch / 2]])
+        small = cv2.warpAffine(A, M, (cw, ch), borderValue=(0, 0, 0))
+        mask = cv2.warpAffine(np.full((ch, cw), 255, np.uint8), M, (cw, ch)).astype(np.float32)[..., None] / 255
+        out = B.astype(np.float32) * (1 - mask) + small.astype(np.float32) * mask
+        out = np.clip(out, 0, 255).astype(np.uint8)
+        if p > 0.6:
+            q = (p - 0.6) / 0.4
+            out = cv2.addWeighted(out, 1 - ease(q), B, ease(q), 0)
+        return light_wipe(out, p) if p < 0.9 else out
     if kind == 'lightwipe':
         base = A if p < 0.5 else B
         return light_wipe(base.copy(), p)
@@ -856,18 +889,25 @@ def render_clip_canvas(clip, reader, t, cw, ch, grader):
         pic = cv2.resize(pic, (cw, ch))
     return pic
 
-def render(v, preview=False, stills=None, stills_dir=None):
+def render(v, preview=False, stills=None, stills_dir=None, frame_range=None, video_only_out=None):
     cw, ch = v.canvas
     os.makedirs(os.path.dirname(v.out), exist_ok=True)
     wav = v.out[:-4] + '.wav'
-    if not stills:
+    if not stills and not video_only_out:
         render_audio(v, wav)
     nframes = int(round(v.duration * FPS))
     frames_to_do = range(nframes)
     if stills:
         frames_to_do = sorted(int(round(s * FPS)) for s in stills)
+    if frame_range:
+        frames_to_do = range(frame_range[0], min(frame_range[1], nframes))
     enc = None
-    if not stills:
+    if video_only_out:
+        enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{cw}x{ch}', '-r', str(FPS),
+                                '-i', '-', '-vf', 'format=yuv420p', '-c:v', 'libx264', '-preset', 'slow', '-crf', '19',
+                                '-profile:v', 'high', '-level', '4.2', '-g', '60', '-color_primaries', 'bt709', '-color_trc', 'bt709',
+                                '-colorspace', 'bt709', video_only_out], stdin=subprocess.PIPE)
+    elif not stills:
         ow, oh = (cw // 2, ch // 2) if preview else (cw, ch)
         enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{cw}x{ch}', '-r', str(FPS),
                                 '-i', '-', '-i', wav, '-vf', f'scale={ow}:{oh}:flags=lanczos,format=yuv420p',
@@ -895,11 +935,7 @@ def render(v, preview=False, stills=None, stills_dir=None):
         for i in active:
             c = clips[i]
             if i not in readers:
-                if stills:
-                    # seek directly for still rendering
-                    readers[i] = Reader(c, pre=max(c.trans_in[1], c.trans_out[1]) / 2 + 0.1)
-                else:
-                    readers[i] = Reader(c, pre=max(c.trans_in[1], c.trans_out[1]) / 2 + 0.1)
+                readers[i] = Reader(c, pre=max(c.trans_in[1], c.trans_out[1]) / 2 + 0.1, t_from=t)
                 graders[i] = Grader(**c.grade.get('grader', {}))
             imgs.append(render_clip_canvas(c, readers[i], t, cw, ch, graders[i]))
         if len(imgs) == 0:
@@ -931,7 +967,7 @@ def render(v, preview=False, stills=None, stills_dir=None):
                 readers[i].close(); del readers[i]
             continue
         enc.stdin.write(frame.tobytes())
-        if fi % 150 == 0:
+        if fi % 300 == 0:
             print(f'  [{v.name}] {t:6.1f}s / {v.duration:.1f}s', flush=True)
     for r in readers.values(): r.close()
     if enc:
@@ -975,3 +1011,31 @@ def remux_audio(v):
                     '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11,alimiter=limit=0.79:level=false:attack=2:release=60', '-c:a', 'aac', '-b:a', '192k', '-ar', str(SR), '-movflags', '+faststart', '-shortest', tmp], check=True)
     os.replace(tmp, v.out)
     print(f'  [{v.name}] audio remuxed')
+
+
+def draw_menorah(frame, cx, cy, scale=1.0, alpha=1.0, t=0.0):
+    """gold line-art hanukkiah: 8 branches + a taller shamash in the middle, flickering flames."""
+    if alpha <= 0.01: return frame
+    lay = np.zeros_like(frame)
+    s = scale
+    base = cy + 40 * s
+    for i in range(9):
+        x = cx + (i - 4) * 26 * s
+        top = base - (88 if i == 4 else 66) * s
+        cv2.line(lay, (int(x), int(base)), (int(x), int(top)), GOLD, max(2, int(4 * s)), cv2.LINE_AA)
+        fl = 1 + 0.15 * math.sin(t * 9 + i * 1.7)
+        cv2.ellipse(lay, (int(x), int(top - 11 * s * fl)), (max(2, int(5 * s)), max(3, int(10 * s * fl))), 0, 0, 360, (170, 235, 255), -1, cv2.LINE_AA)
+    cv2.line(lay, (int(cx - 108 * s), int(base)), (int(cx + 108 * s), int(base)), GOLD, max(2, int(5 * s)), cv2.LINE_AA)
+    cv2.line(lay, (int(cx), int(base)), (int(cx), int(base + 46 * s)), GOLD, max(2, int(5 * s)), cv2.LINE_AA)
+    cv2.line(lay, (int(cx - 42 * s), int(base + 46 * s)), (int(cx + 42 * s), int(base + 46 * s)), GOLD, max(2, int(5 * s)), cv2.LINE_AA)
+    lay = cv2.add(lay, cv2.GaussianBlur(lay, (0, 0), 7))
+    return cv2.addWeighted(frame, 1, lay, alpha, 0)
+
+def outside_window(frame, fx):
+    """apply fx only to the designed background around the landscape window."""
+    ch, cw = frame.shape[:2]
+    x, y, ww, wh = window_rect(cw, ch, 16, 9)
+    keep = frame[y:y + wh].copy()
+    out = fx(frame)
+    out[y:y + wh] = keep
+    return out

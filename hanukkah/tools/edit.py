@@ -74,9 +74,9 @@ class Builder:
         kw.pop('nosnap', None)
         cw, ch = self.canvas
         if layout == 'window':
-            pic = LANDSCAPE
+            pic = kw.pop('pic', LANDSCAPE)
         else:
-            pic = (cw, ch)
+            pic = kw.pop('pic', (cw, ch))
         info = E.probe(src)
         if layout == 'fill' and cw < ch and info['w'] > info['h'] and 'crop_x' not in kw:
             kw['crop_x'] = 0.5
