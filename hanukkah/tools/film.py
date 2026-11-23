@@ -248,11 +248,22 @@ def render_parallel(name, jobs=4):
     wav = v.out[:-4] + '.wav'
     E.render_audio(v, wav)
     os.makedirs(OUT, exist_ok=True)
+    ln = loudnorm_args(wav)
+    # final encode: phone/WhatsApp friendly bitrate, two-pass loudness normalisation (true peak <= -2 dBTP)
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', lst, '-i', wav, '-map', '0:v', '-map', '1:a',
-                    '-c:v', 'copy', '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11,alimiter=limit=0.79:level=false:attack=2:release=60',
+                    '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-maxrate', '7M', '-bufsize', '14M', '-profile:v', 'high',
+                    '-level', '4.2', '-pix_fmt', 'yuv420p', '-af', ln,
                     '-c:a', 'aac', '-b:a', '192k', '-ar', str(E.SR), '-movflags', '+faststart', '-shortest', v.out], check=True)
     print('->', v.out)
     return v
+
+def loudnorm_args(wav, I=-14, TP=-2, LRA=11):
+    """two-pass loudnorm: measure, then apply linearly so the true-peak target holds."""
+    r = subprocess.run(['ffmpeg', '-hide_banner', '-i', wav, '-af', f'loudnorm=I={I}:TP={TP}:LRA={LRA}:print_format=json',
+                        '-f', 'null', '-'], capture_output=True, text=True).stderr
+    d = json.loads(r[r.rindex('{'):r.rindex('}') + 1])
+    return (f"loudnorm=I={I}:TP={TP}:LRA={LRA}:measured_I={d['input_i']}:measured_TP={d['input_tp']}:"
+            f"measured_LRA={d['input_lra']}:measured_thresh={d['input_thresh']}:offset={d['target_offset']}:linear=true")
 
 def plan_parts(v, max_len=59.0, min_len=35.0):
     """cut points for WhatsApp status parts: prefer clip changes, else a beat inside the clip."""
