@@ -38,16 +38,21 @@ PORTRAIT = {'20261123_165803', '20261123_165911'}
 SECTIONS = [
     ('המופע מתחיל', [('20261123_165803', 0.0, 16.8), ('20261123_165911', 0.0, 7.55)]),
     ('אורות החנוכה', [('20261123_170036', 0.0, 38.0)]),
-    ('תזמורת הדליים', [('20261123_170613', 0.0, 12.9), ('20261123_170651', 0.0, 25.4), ('20261123_170949', 0.0, 38.75),
-                       ('20261123_171620', 0.0, 5.4)]),
+    # the full song from the audience (WA0117) intercut with our HD angle of the same moment (170651 = WA0117 - 5.02s)
+    ('תזמורת הדליים', [('20261123_170613', 0.0, 12.9),
+                       ('WA0117', 0.0, 54.4, [(0.0, 5.1, 'WA0117'), (5.1, 15.6, '20261123_170651'), (15.6, 23.6, 'WA0117'),
+                                              (23.6, 30.2, '20261123_170651'), (30.2, 54.4, 'WA0117')]),
+                       ('WA0111', 0.0, 7.3), ('WA0112', 0.0, 15.2), ('WA0113', 0.0, 29.4),
+                       ('20261123_170949', 0.0, 38.75), ('20261123_171620', 0.0, 5.4)]),
     ('ריקוד במעגל', [('20261123_172300', 0.0, 108.4)]),
     ('ריקוד הסרטים', [('20261123_172542', 0.0, 21.4), ('20261123_172647', 0.0, 12.05)]),
     ('משחק המצנח', [('20261123_173020', 0.0, 68.8), ('20261123_173233', 0.0, 25.45), ('20261123_173453', 0.0, 19.4)]),
     ('רוקדות יחד', [('20261123_173639', 0.0, 71.25)]),
-    ('ריקוד אמהות ובנות', [('20261123_174001', 0.0, 41.55), ('20261123_174046', 0.0, 5.1), ('20261123_174055', 0.0, 32.45),
-                           ('20261123_174135', 0.0, 22.35)]),
+    # just a taste of the mothers' dance, choosing the moments that show many different mothers and girls
+    ('ריקוד אמהות ובנות', [('20261123_174001', 9.3, 20.4)]),
 ]
-STAB = {'20261123_170651', '20261123_170949', '20261123_171620', '20261123_172300', '20261123_172542', '20261123_172647', '20261123_174001'}
+CAM_OFFSET = {'20261123_170651': 5.02}   # video time = audio-source time - offset
+STAB = {'WA0111', 'WA0112', 'WA0113', 'WA0117', '20261123_170651', '20261123_170949', '20261123_171620', '20261123_172300', '20261123_172542', '20261123_172647', '20261123_174001'}
 
 def auto_gain(src, a, b, target_db=-19.0):
     x = E.seg(src, a, b - a)
@@ -71,7 +76,7 @@ def frame_design(frame, t, ov):
     frame = E.draw_text(frame, 'מסיבת חנוכה · גן מלכות', W / 2, H * 0.19, alpha=0.9 * a, size=58,
                         font='frank-ruhl-libre-700', style='cream')
     frame = E.draw_rule(frame, W / 2, H * 0.735, W * 0.2, 1.0, 0.8 * a)
-    frame = E.draw_text(frame, 'מאירים את העולם', W / 2, H * 0.775, alpha=0.75 * a, size=56,
+    frame = E.draw_text(frame, 'מאירות את העולם', W / 2, H * 0.775, alpha=0.75 * a, size=56,
                         font='frank-ruhl-libre-700', style='cream')
     return frame
 
@@ -102,8 +107,9 @@ def build_film(b):
     # ----- the party, section by section
     items = []
     for si, (title, segs) in enumerate(SECTIONS):
-        for k, (src, a, z) in enumerate(segs):
-            items.append(dict(src=src, a=a, z=z, title=title if k == 0 else None, sec=si))
+        for k, seg in enumerate(segs):
+            src, a, z = seg[:3]
+            items.append(dict(src=src, a=a, z=z, cams=seg[3] if len(seg) > 3 else None, title=title if k == 0 else None, sec=si))
     # transition into each item
     for i, it in enumerate(items):
         prev = items[i - 1] if i else None
@@ -128,7 +134,18 @@ def build_film(b):
         kw = dict(stab=it['src'] in STAB)
         if not portrait:
             kw.update(window=True, pic=WPIC)
-        c0, c1 = b.shot(s=dur, trans=it['trans'], **kw)
+        if it['cams']:  # multi-camera: one continuous song, switching angles
+            c0 = None
+            for j, (p0, p1, vsrc) in enumerate(it['cams']):
+                q0 = max(p0, at - it['a'] + it['a']) if j == 0 else p0
+                q1 = min(p1, at + dur) if j == len(it['cams']) - 1 else p1
+                if j == 0: q0 = at
+                vat = q0 - CAM_OFFSET.get(vsrc, 0.0)
+                kw2 = dict(kw); kw2['stab'] = vsrc in STAB
+                s0, s1 = b.shot(s=q1 - q0, src=vsrc, at=vat, nosnap=True, trans=it['trans'] if j == 0 else ('dissolve', 0.0), **kw2)
+                c0 = s0 if c0 is None else c0
+        else:
+            c0, c1 = b.shot(s=dur, trans=it['trans'], **kw)
         if not portrait and win_start is None:
             win_start = c0 - d_in / 2
         if it['title']:
@@ -149,8 +166,8 @@ def build_film(b):
     b.add(frame_design, win_start, film_end + 6.0)
 
     # ----- end card
-    b.bed_start('20261123_174135', 14.0, gain=auto_gain('20261123_174135', 14, 20) * 0.6, snap=False, fade=1.0)
-    t0, t1 = b.shot(s=6.0, src='20261123_174135', at=16.0, speed=0.3, nosnap=True, blur_bg=True, dim=(0, 1.0, 0.45),
+    b.bed_start('20261123_174055', 26.0, gain=auto_gain('20261123_174055', 26, 32) * 0.6, snap=False, fade=1.0)
+    t0, t1 = b.shot(s=6.0, src='20261123_174001', at=12.0, speed=0.3, nosnap=True, blur_bg=True, dim=(0, 1.0, 0.45),
                     trans=('gold', 1.0), window=True, pic=WPIC)
     b.duck(t0 - 0.5, t1 + 0.5, db=-5, lp=2500, reverb=0.35, ramp=1.0)
     b.fx('shimmer', t0 + 0.2, dur=3.5, gain=0.2)
@@ -158,7 +175,7 @@ def build_film(b):
     b.add(particles, t0, t1 + 1, k=0.9, seed=61, fo=0.01)
     b.add(text_ov, t0 + 0.4, t1 + 1, txt='גן מלכות', y=0.43, size=200, tin=1.0, shimmer=0.9, fo=0.01, grow=0.01)
     b.add(rule_ov, t0 + 0.9, t1 + 1, y=0.485, w=0.24)
-    b.add(text_ov, t0 + 1.2, t1 + 1, txt='מאירים את העולם!', y=0.53, size=104, font='frank-ruhl-libre-700', tin=0.9, shimmer=1.8, fo=0.01)
+    b.add(text_ov, t0 + 1.2, t1 + 1, txt='מאירות את העולם!', y=0.53, size=104, font='frank-ruhl-libre-700', tin=0.9, shimmer=1.8, fo=0.01)
     b.add(flare_ov, t0 + 0.7, t0 + 3.2, y=0.43, gain=0.8)
     b.add(black_out, t1 - 0.9, t1 + 0.01)
     return film_end
@@ -167,7 +184,7 @@ def build_film(b):
 HIGHLIGHTS = [('20261123_165803', 2.4, 7.6), ('20261123_165911', 0.0, 4.0), ('20261123_170036', 9.8, 13.6),
               ('20261123_170949', 18.9, 23.0), ('20261123_172300', 59.0, 63.6), ('20261123_172647', 0.0, 4.2),
               ('20261123_173020', 28.4, 35.0), ('20261123_173233', 4.0, 8.0), ('20261123_173639', 5.4, 9.4),
-              ('20261123_174055', 0.0, 4.8), ('20261123_174135', 8.6, 12.6)]
+              ('20261123_174001', 11.0, 15.2), ('20261123_174001', 15.6, 19.2)]
 
 def build_highlights(b):
     cw, ch = b.canvas
@@ -198,15 +215,15 @@ def build_highlights(b):
         prev_p = portrait
     end = b.t
     b.add(frame_design, win_start, end + 5)
-    b.bed_start('20261123_174135', 12.6, gain=auto_gain('20261123_174135', 12, 16) * 0.6, snap=False, fade=0.8)
-    t0, t1 = b.shot(s=4.0, src='20261123_174135', at=14.0, speed=0.3, nosnap=True, blur_bg=True, dim=(0, 0.8, 0.45),
+    b.bed_start('20261123_174055', 31.0, gain=auto_gain('20261123_174055', 28, 32) * 0.6, snap=False, fade=0.8)
+    t0, t1 = b.shot(s=4.0, src='20261123_174001', at=13.0, speed=0.3, nosnap=True, blur_bg=True, dim=(0, 0.8, 0.45),
                     trans=('gold', 0.8), window=True, pic=WPIC)
     b.duck(t0 - 0.4, t1 + 0.5, db=-5, lp=2500, reverb=0.35, ramp=0.8)
     b.fx('shimmer', t0 + 0.2, dur=3.0, gain=0.2)
     b.add(particles, t0, t1 + 1, k=0.9, seed=61, fo=0.01)
     b.add(text_ov, t0 + 0.3, t1 + 1, txt='גן מלכות', y=0.43, size=200, tin=0.9, shimmer=0.8, fo=0.01)
     b.add(rule_ov, t0 + 0.7, t1 + 1, y=0.485, w=0.24)
-    b.add(text_ov, t0 + 1.0, t1 + 1, txt='מאירים את העולם!', y=0.53, size=104, font='frank-ruhl-libre-700', tin=0.8, fo=0.01)
+    b.add(text_ov, t0 + 1.0, t1 + 1, txt='מאירות את העולם!', y=0.53, size=104, font='frank-ruhl-libre-700', tin=0.8, fo=0.01)
     b.add(black_out, t1 - 0.7, t1 + 0.01)
 
 # ---------------------------------------------------------------- rendering helpers

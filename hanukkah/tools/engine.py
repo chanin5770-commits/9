@@ -34,7 +34,7 @@ _probe = {}
 def probe(name):
     if name not in _probe:
         out = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries',
-                              'stream=width,height,r_frame_rate:stream_side_data=rotation', '-of', 'json',
+                              'stream=width,height,avg_frame_rate:stream_side_data=rotation', '-of', 'json',
                               src_path(name)], capture_output=True, text=True).stdout
         s = json.loads(out)['streams'][0]
         rot = 0
@@ -42,7 +42,7 @@ def probe(name):
             rot = int(sd.get('rotation', 0))
         w, h = s['width'], s['height']
         if abs(rot) == 90: w, h = h, w
-        n, d = s['r_frame_rate'].split('/')
+        n, d = s['avg_frame_rate'].split('/')
         _probe[name] = dict(w=w, h=h, fps=float(n) / float(d))
     return _probe[name]
 

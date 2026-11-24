@@ -235,13 +235,13 @@ def header(b, t0, t1):
     """subtle title above the landscape window in the vertical versions"""
     b.add(text_ov, t0, t1, txt='מסיבת חנוכה', y=0.205, size=70, font='frank-ruhl-libre-700', tin=0.8, fo=0.6)
     b.add(text_ov, t0 + 0.3, t1, txt='גן מלכות', y=0.245, size=120, tin=0.9, shimmer=1.0, fo=0.6)
-    b.add(text_ov, t0 + 0.6, t1, txt='מאירים את העולם', y=0.72, size=64, font='frank-ruhl-libre-700', style='cream', tin=0.9, fo=0.6)
+    b.add(text_ov, t0 + 0.6, t1, txt='מאירות את העולם', y=0.72, size=64, font='frank-ruhl-libre-700', style='cream', tin=0.9, fo=0.6)
 
 
 def end_title(b, t0, t1, ys=(0.43, 0.53), big=210, small=110):
     b.add(text_ov, t0 + 0.2, t1 + 1, txt='גן מלכות', y=ys[0], size=big, tin=1.0, shimmer=0.8, fo=0.01, grow=0.01)
     b.add(rule_ov, t0 + 0.7, t1 + 1, y=(ys[0] + ys[1]) / 2 + 0.005, w=0.24)
-    b.add(text_ov, t0 + 1.0, t1 + 1, txt='מאירים את העולם!', y=ys[1] + 0.03, size=small, font='frank-ruhl-libre-700', tin=0.9, shimmer=1.6, fo=0.01)
+    b.add(text_ov, t0 + 1.0, t1 + 1, txt='מאירות את העולם!', y=ys[1] + 0.03, size=small, font='frank-ruhl-libre-700', tin=0.9, shimmer=1.6, fo=0.01)
     b.add(flare_ov, t0 + 0.5, t0 + 3.0, y=ys[0], gain=0.9)
 
 # ----------------------------------------------------------------------------------------------
