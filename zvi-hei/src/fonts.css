@@ -1,0 +1,7 @@
+@font-face{font-family:'Fredoka';font-weight:500;src:url(../fonts/fredoka-hebrew-500-normal.woff2) format('woff2');}
+@font-face{font-family:'Fredoka';font-weight:700;src:url(../fonts/fredoka-hebrew-700-normal.woff2) format('woff2');}
+@font-face{font-family:'Fredoka';font-weight:700;src:url(../fonts/fredoka-latin-700-normal.woff2) format('woff2');unicode-range:U+0000-00FF;}
+@font-face{font-family:'NotoHeb';font-weight:800;src:url(../fonts/noto-sans-hebrew-hebrew-800-normal.woff2) format('woff2');}
+@font-face{font-family:'NotoHeb';font-weight:900;src:url(../fonts/noto-sans-hebrew-hebrew-900-normal.woff2) format('woff2');}
+@font-face{font-family:'Secular';font-weight:400;src:url(../fonts/secular-one-hebrew-400-normal.woff2) format('woff2');}
+@font-face{font-family:'Varela';font-weight:400;src:url(../fonts/varela-round-hebrew-400-normal.woff2) format('woff2');}
