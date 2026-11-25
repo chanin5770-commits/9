@@ -302,7 +302,7 @@ const DROPS=[[7.41,1.82,12.0,2.9],[10.67,2.9,12.0,5.45],[0.3,2.9,4.19,3.51]]; //
 
 const ROOMS=[
   {id:'kitchen',name:'מבואה ומטבח',area:'כ־19 מ״ר',dims:'4.59 × 4.10',rect:[7.41,1.82,12.0,6.0],at:[9.6,3.4],
-   text:'ארונות שמנת עד התקרה, אי שיש עם שלושה כיסאות בר, שני כיורים להפרדה בין בשרי לחלבי, וברזים בזהב מוברש.',
+   text:'ארונות בגוון קשמיר עד התקרה, שני תנורים זה לצד זה, מקרר משולב עם ידיות זהב ארוכות, נישה מוארת ומקרר יין. אי שיש עם חיפוי עד הרצפה וכיסאות משני צדדיו.',
    path:[[11.4,4.6],[11.25,5.6],[11.1,6.5]],look:[9.0,2.6]},
   {id:'living',name:'סלון ופינת אוכל',area:'כ־38 מ״ר',dims:'5.25 × 6.0',rect:[8.26,6.0,13.51,13.76],at:[11.2,11.2],
    text:'ספה מודולרית בקטיפה ורודה עם רגלי זהב, קירות עם פרופילים מוזהבים, אח מתחת לטלוויזיה, וילונות כפולים ונברשת קלאסית מעל שולחן ל־8.',
@@ -345,7 +345,9 @@ const CMP=[
   ['מטבח','כיור מתחת לחלון, כיור שני בדופן, כיריים 80 ס״מ מהקיר, נקודת רצפה לאי','ok','מיושם'],
   ['אי מטבח','לפי הסקיצה עם המידות: כ־118 × 224 ס״מ','ok','מיושם'],
   ['פינת כביסה','הכנה למכונת כביסה ומייבש עם כיסוי צנרת, במסדרון','ok','מיושם'],
-  ['קולונה גבוהה במטבח','בסקיצה: 90 ו־190 ס״מ מקצה הקולונה','q','פורש כמקרר ברוחב 90 ס״מ, ולצדו מזווה, מקרר יין, נישה פתוחה ותנורים'],
+  ['קיר ארונות גבוה במטבח','בסקיצה: 90 ו־190 ס״מ מקצה הקולונה','q','מקרר משולב ברוחב 96 ס״מ, מקרר יין, שני תנורים זה לצד זה ונישה מוארת'],
+  ['כיורים','בתמונת ההשראה שני הכיורים מתחת לחלון','q','לפי תוכנית האינסטלציה: כיור מתחת לחלון וכיור בדופן (לבחירתך)'],
+  ['כיסאות משני צדי האי','בין האי למשטח יש כ־117 ס״מ','q','לבחירתך: יש כיסאות משני הצדדים, ונשאר מעבר צר של כ־70 ס״מ'],
 ];
 const ASSUME=['גובה התקרה 2.70 מ׳ (לא מסומן).','גובה הנמכות התקרה 2.45 מ׳ (לא מסומן).','גובה האדנים: 0.90 מ׳ בחדרים, 1.05 מ׳ במטבח, 1.30–1.40 מ׳ בחדרי הרחצה.','כיוון השמש: אין חץ צפון, ולכן המרפסת הונחה דרומה.','שיוך החדרים: חדר הבנות הוא החדר הפינתי הגדול, וחדר התאומים הוא החדר הצמוד ליחידת ההורים. אפשר להחליף.','הריהוט מוצע ובנוי בקוד. הוא בקנה מידה אמיתי, אבל אינו דגם של מוצר מסוים.'];
 
@@ -418,11 +420,11 @@ const TX={
 const P={cream:'#efe5d6',pearl:'#f6f1ea',beige:'#d9c6ab',powder:'#e9c6c1',wood:'#d2b086',gold:'#c4a064',lilac:'#cdbde0'};
 const std=o=>new THREE.MeshStandardMaterial(o);
 const phys=o=>new THREE.MeshPhysicalMaterial(o);
-const tex={floor:TX.porcelain('#dcdad5','#c8c5bf'),oak:TX.oak(P.wood),oakDark:TX.oak('#b48e64',1.4,9),slats:TX.slats('#d6b58c'),marble:TX.marble('#f1ebe2','#c9b59a'),marble2:TX.marble('#f4efe8','#d2c3ad',1.2,4),
+const tex={floor:TX.porcelain('#d7cdbf','#c6baa9'),oak:TX.oak(P.wood),oakDark:TX.oak('#b48e64',1.4,9),slats:TX.slats('#d6b58c'),marble:TX.marble('#f1ebe2','#c9b59a'),marble2:TX.marble('#f4efe8','#d2c3ad',1.2,4),
   plaster:TX.plaster(P.pearl),velvet:TX.fabric('#c08a7e',.22,13),boucle:TX.fabric(P.cream,.2,15,true),linen:TX.fabric('#f4efe6',.3,17),beigeFab:TX.fabric(P.beige,.25,19),rug:TX.fabric('#ece3d5',.18,23,true),
   lilacFab:TX.fabric(P.lilac,.25,27),pinkFab:TX.fabric('#f1d3cf',.25,29),deck:TX.oak('#b9946b',1.2,31)};
 const M={
-  floor:std({...tex.floor,roughness:.18}),wall:std({...tex.plaster,roughness:.95}),ceil:std({color:'#f8f5f0',roughness:1}),
+  floor:std({...tex.floor,roughness:.26}),wall:std({...tex.plaster,roughness:.95}),ceil:std({color:'#f8f5f0',roughness:1}),
   cab:std({color:'#e2d6c5',roughness:.55}),cabSeam:std({color:'#b9ab97',roughness:.8}),oak:std({...tex.oak,roughness:.55}),slats:std({...tex.slats,roughness:.6}),
   marble:phys({...tex.marble,roughness:.16,clearcoat:.4,clearcoatRoughness:.2}),wetTile:std({...tex.marble2,roughness:.18}),
   gold:std({color:P.gold,metalness:1,roughness:.32}),chromeDark:std({color:'#2b2b2d',metalness:.8,roughness:.35}),
@@ -446,6 +448,7 @@ const M={
   curtainLilac:std({...TX.fabric('#ddd0ec',.4,43),roughness:.95,side:THREE.DoubleSide}),curtainPink:std({...TX.fabric('#f2d8d3',.4,45),roughness:.95,side:THREE.DoubleSide,transparent:true,opacity:.9}),
   jar:std({color:'#e8d6b0',roughness:.9}),basket:std({...TX.fabric('#c8a77a',.12,51),roughness:.95}),wineGlass:std({color:'#1a1414',transparent:true,opacity:.45,roughness:.05,metalness:.3,depthWrite:false}),bottle:std({color:'#3a1f22',roughness:.25}),bottle2:std({color:'#2b3324',roughness:.25}),
   curtainMauve:std({...TX.fabric('#a98783',.4,53),roughness:.92,side:THREE.DoubleSide}),rugMarble:std({...TX.marble('#f1eee9','#c4a062',1.4,61),roughness:.95}),flame:std({color:'#000',emissive:'#ff9a3c',emissiveIntensity:1.6}),
+  kcab:std({color:'#d6c8b4',roughness:.62}),kseam:std({color:'#9d8f7c',roughness:.8}),kmarble:phys({...TX.marble('#ece2d3','#cdb89a',1.8,71),roughness:.2,clearcoat:.3,clearcoatRoughness:.25}),screenBlue:std({color:'#0b1220',emissive:'#4aa3ff',emissiveIntensity:.6}),
   outCush:std({...TX.fabric('#efe9df',.3,47),roughness:.95,side:THREE.DoubleSide}),teak:std({...tex.oakDark,roughness:.6}),deck:std({...tex.deck,roughness:.7}),
   facade:std({color:'#ddd6ca',roughness:.92}),core:std({color:'#cfc9bf',roughness:.95}),paving:std({color:'#c2baae',roughness:.95}),grass:std({...TX.grass(),roughness:1}),
   book:[std({color:'#cdb9a0'}),std({color:'#e8ddd0'}),std({color:'#a88f74'}),std({color:'#e3c7bf'})],
@@ -604,49 +607,69 @@ function classicChandelier(x,z,y,label){const g=grp(x,z,0,label,'קוטר 80 ס�
     const cx=Math.cos(a)*r,cz=Math.sin(a)*r;lathe(g,[[0,0],[.035,.0],[.04,.03],[.02,.04],[0,.04]],cx,y-.08,cz,M.gold,16,false);gc(g,.012,.012,.1,cx,y-.04,cz,M.white,10,false);
     const b=new THREE.Mesh(new THREE.SphereGeometry(.02,10,8),M.bulb);b.scale.y=1.6;b.position.set(cx,y+.09,cz);g.add(b)}
   return g}
-// ---- Kitchen (cream reference kitchen fitted to the real plan)
-{ const bh=.9;
-  const run=(x0,z0,x1,z1,face,label)=>{const g=grp(0,0,0,label,`${Math.round(Math.max(x1-x0,z1-z0)*100)} × ${Math.round(Math.min(x1-x0,z1-z0)*100)} ס״מ`);
-    aBox(x0,z0,x1,z1,.1,bh-.04,M.cab,{parent:g,collide:true});aBox(x0,z0,x1-(face==='x'?.05:0),z1-(face==='z'?.05:0),0,.1,M.cabSeam,{parent:g,cast:false});
-    const along=face==='z'?x1-x0:z1-z0,n=Math.max(1,Math.round(along/.6));
-    for(let i=1;i<n;i++){const t=i/n;if(face==='z'){const x=x0+(x1-x0)*t;aBox(x-.003,z1-.004,x+.003,z1+.002,.1,bh-.04,M.cabSeam,{parent:g,cast:false})}else{const z=z0+(z1-z0)*t;aBox(x1-.004,z-.003,x1+.002,z+.003,.1,bh-.04,M.cabSeam,{parent:g,cast:false})}}
-    if(face==='z')aBox(x0,z1-.004,x1,z1+.002,.62,.626,M.cabSeam,{parent:g,cast:false});else aBox(x1-.004,z0,x1+.002,z1,.62,.626,M.cabSeam,{parent:g,cast:false});
-    aBox(x0,z0,x1+(face==='x'?.02:0),z1+(face==='z'?.02:0),bh-.04,bh,M.marble,{parent:g});return g};
-  run(7.41,1.82,12.0,2.42,'z','משטח עבודה ליד החלון');run(7.41,2.42,8.01,4.9,'x','משטח עבודה בדופן');
-  aBox(7.41,1.82,12.0,1.835,bh,1.45,M.marble,{cast:false});aBox(7.41,1.82,7.425,4.9,bh,1.45,M.marble,{cast:false});
-  for(const [x0,x1] of [[7.41,8.85],[10.5,11.08],[11.74,12.0]]){aBox(x0,1.82,x1,2.17,1.45,DROP,M.cab);aBox(x0,2.16,x1,2.17,1.445,1.455,M.led,{cast:false});for(let x=x0+.5;x<x1-.1;x+=.5)aBox(x-.003,2.17,x+.003,2.174,1.46,DROP-.01,M.cabSeam,{cast:false})}
-  aBox(7.41,2.17,7.76,4.9,1.45,DROP,M.cab);aBox(7.75,2.17,7.76,4.9,1.445,1.455,M.led,{cast:false});aBox(7.41,2.9,7.76,4.9,DROP,H,M.cab,{cast:false});
-  aBox(9.95,1.82,10.5,2.17,2.1,DROP,M.cab);aBox(8.85,1.82,9.4,2.17,2.1,DROP,M.cab);
-  {const g=grp(11.41,2.05,0,'קולט אדים משולב','62 × 35 ס״מ');gb(g,.66,.6,.35,0,1.85,0,M.cab);const s=gb(g,.66,.25,.42,0,1.6,.02,M.cab);s.rotation.x=.2}
+// ---- Kitchen: rebuilt from the reference photo, fitted to the 17/08 plans (sinks per plumbing plan)
+{ const bh=.9,K=M.kcab,seam=M.kseam;
+  const vSeam=(face,pos,a0,a1,y0,y1)=>{if(face==='z')aBox(pos-.0025,a1-.003,pos+.0025,a1+.002,y0,y1,seam,{cast:false});else aBox(a1-.003,pos-.0025,a1+.002,pos+.0025,y0,y1,seam,{cast:false})};
+  const hSeam=(face,a0,a1,b1,y)=>{if(face==='z')aBox(a0,b1-.003,a1,b1+.002,y-.0025,y+.0025,seam,{cast:false});else aBox(b1-.003,a0,b1+.002,a1,y-.0025,y+.0025,seam,{cast:false})};
+  // base runs: handleless fronts, drawer stacks, recessed plinth, warm marble top
+  const run=(x0,z0,x1,z1,face,label,drawerBays)=>{const g=grp(0,0,0,label,`${Math.round(Math.max(x1-x0,z1-z0)*100)} × ${Math.round(Math.min(x1-x0,z1-z0)*100)} ס״מ`);
+    aBox(x0,z0,x1,z1,.1,bh-.04,K,{parent:g,collide:true});aBox(x0,z0,x1-(face==='x'?.06:0),z1-(face==='z'?.06:0),0,.1,seam,{parent:g,cast:false});
+    const A0=face==='z'?x0:z0,A1=face==='z'?x1:z1,B1=face==='z'?z1:x1,n=Math.max(1,Math.round((A1-A0)/.6));
+    for(let i=0;i<n;i++){const s0=A0+(A1-A0)*i/n,s1=A0+(A1-A0)*(i+1)/n;if(i>0)vSeam(face,s0,0,B1,.1,bh-.06);hSeam(face,s0,s1,B1,bh-.07);
+      if(drawerBays.includes(i)){hSeam(face,s0,s1,B1,.62);hSeam(face,s0,s1,B1,.36)}}
+    aBox(x0,z0,x1+(face==='x'?.02:0),z1+(face==='z'?.02:0),bh-.04,bh,M.kmarble,{parent:g});return g};
+  run(7.41,1.82,12.0,2.42,'z','משטח עבודה ליד החלון',[0,1,6]);run(7.41,2.42,8.01,4.9,'x','משטח עבודה בדופן',[2,3]);
+  aBox(7.41,1.82,12.0,1.835,bh,1.42,M.kmarble,{cast:false});aBox(7.41,1.82,7.425,4.9,bh,1.42,M.kmarble,{cast:false});
+  // wall cabinets in two stacked rows up to the (dropped) ceiling, warm LED under them
+  const upper=(x0,z0,x1,z1,face)=>{aBox(x0,z0,x1,z1,1.42,DROP,K);const A0=face==='z'?x0:z0,A1=face==='z'?x1:z1,B1=face==='z'?z1:x1,n=Math.max(1,Math.round((A1-A0)/.5));
+    for(let i=1;i<n;i++)vSeam(face,A0+(A1-A0)*i/n,0,B1,1.43,DROP-.01);hSeam(face,A0,A1,B1,2.05);
+    if(face==='z')aBox(x0,z1-.012,x1,z1-.002,1.415,1.425,M.led,{cast:false});else aBox(x1-.012,z0,x1-.002,z1,1.415,1.425,M.led,{cast:false})};
+  upper(7.41,1.82,8.85,2.17,'z');upper(10.5,1.82,11.08,2.17,'z');upper(11.74,1.82,12.0,2.17,'z');upper(7.41,2.17,7.76,4.9,'x');
+  aBox(8.85,1.82,10.5,2.17,2.24,DROP,K);aBox(7.41,2.9,7.76,4.9,DROP,H,K,{cast:false});
+  {const g=grp(11.41,2.05,0,'קולט אדים משולב בנגרות','66 × 35 ס״מ');gb(g,.66,.6,.35,0,1.85,0,K);const sl=gb(g,.66,.26,.4,0,1.6,.02,K);sl.rotation.x=.22;gb(g,.62,.008,.3,0,1.6,.02,M.chromeDark,false)}
+  {const pf=grp(11.41,1.84,0,'ברז מילוי סירים','זהב מוברש');gb(pf,.06,.06,.03,0,1.25,.015,M.gold);gb(pf,.02,.02,.3,0,1.27,.18,M.gold);gb(pf,.02,.12,.02,0,1.17,.32,M.gold)}
+  // sinks per the plumbing plan: meat under the window, dairy on the side run; brushed-gold gooseneck taps
   for(const [x,z,rot,label] of [[9.67,2.12,0,'כיור בשרי'],[7.71,3.2,Math.PI/2,'כיור חלבי']]){const g=grp(x,z,rot,label,'60 × 42 ס״מ');gb(g,.6,.02,.42,0,bh-.005,0,M.chromeDark,false);gb(g,.56,.18,.38,0,bh-.19,0,M.chromeDark,false);
-    gc(g,.018,.022,.32,0,bh,-.25,M.gold,12);const arc=new THREE.Mesh(new THREE.TorusGeometry(.11,.012,8,20,Math.PI),M.gold);arc.position.set(0,bh+.32,-.14);arc.rotation.y=Math.PI/2;g.add(arc);gc(g,.012,.012,.12,0,bh+.2,-.03,M.gold,8)}
-  {const g=grp(11.41,2.13,0,'כיריים','80 × 52 ס״מ');gb(g,.8,.012,.52,0,bh,0,M.black,false);for(const [a,b] of [[-.25,-.12],[-.25,.12],[0,0],[.25,-.12],[.25,.12]])gc(g,.05,.05,.012,a,bh+.012,b,M.chromeDark,16,false)}
-  const col=grp(0,0,0,'קולונה גבוהה','296 × 60 × 270 ס״מ');aBox(7.41,4.9,8.01,7.86,0,H,M.cab,{parent:col,collide:true});
-  aBox(8.0,4.95,8.015,5.47,.85,1.42,M.black,{parent:col,cast:false});aBox(8.0,4.95,8.015,5.47,1.48,2.02,M.black,{parent:col,cast:false});
-  aBox(8.012,4.97,8.02,5.45,1.36,1.38,M.gold,{parent:col,cast:false});aBox(8.012,4.97,8.02,5.45,1.96,1.98,M.gold,{parent:col,cast:false});
-  aBox(7.55,5.52,8.012,5.93,.9,2.3,M.oak,{parent:col,cast:false});
-  for(const y of [1.25,1.6,1.95]){aBox(7.56,5.53,8.0,5.92,y,y+.02,M.oak,{parent:col,cast:false});aBox(7.57,5.54,7.6,5.91,y+.02,y+.026,M.led,{parent:col,cast:false})}
-  {const g=grp(7.82,5.72,-Math.PI/2);vaseBranches(g,0,1.62,0,.8);for(const [y,n] of [[1.27,3],[1.97,2]])for(let i=0;i<n;i++){const xx=-.13+i*.13;gc(g,.045,.045,.15,xx,y,0,M.glass,16);gc(g,.04,.04,.1,xx,y,0,M.jar,16);gc(g,.047,.047,.02,xx,y+.15,0,M.oak,16)}
-   gc(g,.13,.12,.14,0,.926,0,M.basket,20)}
-  aBox(7.6,5.98,8.0,6.38,.1,1.85,M.black,{parent:col,cast:false});aBox(8.0,5.98,8.015,6.38,.1,1.85,M.wineGlass,{parent:col,cast:false}).renderOrder=2;
-  for(let y=.25;y<1.8;y+=.13){aBox(7.62,6.0,8.0,6.36,y,y+.012,M.oak,{parent:col,cast:false});for(let k=0;k<4;k++){const b=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.3,10),k%2?M.bottle:M.bottle2);b.rotation.z=Math.PI/2;b.position.set(7.8,y+.05,6.05+k*.09);col.add(b)}}
-  aBox(7.995,5.99,8.0,6.37,1.85,1.86,M.led,{parent:col,cast:false});
-  aBox(8.0,6.02,8.02,6.06,.6,1.5,M.gold,{parent:col,cast:false});
-  for(const z of [7.39,7.43])aBox(8.01,z-.01,8.035,z+.01,.75,1.9,M.gold,{parent:col,cast:false});
-  for(const z of [6.4,6.96,7.41])aBox(8.0,z-.005,8.012,z+.005,.05,H-.02,M.cabSeam,{parent:col,cast:false});
-  {const g=grp(0,0,0,'אי מטבח','118 × 224 × 94 ס״מ');aBox(9.24,3.73,10.4,5.89,0,.88,M.cab,{parent:g,collide:true});
-   aBox(10.4,3.75,10.42,5.87,.06,.84,M.slats,{parent:g,cast:false});
-   aBox(9.2,3.69,10.44,5.93,.88,.94,M.marble,{parent:g});aBox(9.2,3.69,10.44,3.73,0,.88,M.marble,{parent:g});aBox(9.2,5.89,10.44,5.93,0,.88,M.marble,{parent:g});
-   aBox(10.43,3.75,10.435,5.87,.82,.83,M.led,{parent:g,cast:false});
-   const d=grp(9.8,4.6);vaseBranches(d,0,.94,0,1.1);gc(d,.16,.16,.012,.05,.94,.45,M.gold,28);gc(d,.045,.045,.09,.05,.952,.45,M.glass,16);gc(d,.03,.03,.05,.05,.955,.45,M.white,12)}
-  for(const z of [4.05,4.81,5.57])stool(10.82,z,-Math.PI/2);colliders.push([10.55,3.8,11.1,5.85]);
-  {const g=grp(7.75,2.2);vaseBranches(g,0,bh,0,.9);lathe(g,[[0,0],[.035,0],[.035,.18],[.012,.22],[0,.22]],.25,bh,-.05,M.glass)}
-  {const g=grp(11.85,2.15);lathe(g,[[0,0],[.03,0],[.03,.16],[.01,.2],[0,.2]],0,bh,0,M.terracotta);lathe(g,[[0,0],[.03,0],[.03,.14],[.01,.18],[0,.18]],-.08,bh,.02,M.pot)}
-  {const pf=grp(11.41,1.84,0,'ברז מילוי סירים','זהב מוברש');gb(pf,.06,.06,.03,0,1.3,.015,M.gold);const a1=gb(pf,.02,.02,.3,0,1.32,.18,M.gold);gb(pf,.02,.12,.02,0,1.22,.32,M.gold)}
+    gc(g,.016,.02,.34,0,bh,-.25,M.gold,12);const arc=new THREE.Mesh(new THREE.TorusGeometry(.1,.011,8,20,Math.PI),M.gold);arc.position.set(0,bh+.34,-.15);arc.rotation.y=Math.PI/2;g.add(arc);gc(g,.011,.011,.1,0,bh+.24,-.05,M.gold,8);gc(g,.012,.012,.08,.12,bh,-.25,M.gold,8)}
+  {const g=grp(11.41,2.13,0,'כיריים','80 × 52 ס״מ');gb(g,.8,.012,.52,0,bh,0,M.black,false);for(const [a,b] of [[-.25,-.12],[-.25,.12],[0,0],[.25,-.12],[.25,.12]]){gc(g,.06,.06,.01,a,bh+.012,b,M.chromeDark,16,false);gc(g,.03,.03,.02,a,bh+.02,b,M.black,12,false)}}
+  // tall wall: lit vertical niche, two ovens side by side, wine fridge, integrated fridge with long gold handles
+  const T0=4.9,T1=7.86,X0=7.41,X1=8.01,FX=8.012;const col=grp(0,0,0,'קיר ארונות גבוה','296 × 60 × 270 ס״מ');aBox(X0,T0,X1,T1,0,H,K,{parent:col,collide:true});
+  const fv=(z,y0=.05,y1=H-.01)=>aBox(X1-.002,z-.0025,X1+.004,z+.0025,y0,y1,seam,{parent:col,cast:false}),fh=(z0,z1,y)=>aBox(X1-.002,z0,X1+.004,z1,y-.0025,y+.0025,seam,{parent:col,cast:false});
+  // niche 4.92–5.28
+  aBox(7.5,4.93,FX,5.27,.1,H-.08,M.oak,{parent:col,cast:false});
+  for(const y of [.55,.95,1.35,1.75,2.15]){aBox(7.51,4.94,8.0,5.26,y,y+.02,M.oak,{parent:col,cast:false});aBox(7.52,4.95,7.54,5.25,y+.02,y+.026,M.led,{parent:col,cast:false})}
+  {const g=grp(7.78,5.1,-Math.PI/2);for(const [y,n] of [[.97,2],[1.37,2],[1.77,1]])for(let i=0;i<n;i++){const xx=n>1?-.07+i*.14:0;gc(g,.045,.045,.16,xx,y,0,M.glass,16);gc(g,.04,.04,.11,xx,y,0,M.jar,16);gc(g,.047,.047,.02,xx,y+.16,0,M.oak,16)}
+   gc(g,.13,.12,.15,0,.575,0,M.basket,20);lathe(g,[[0,0],[.06,0],[.07,.12],[0,.12]],0,2.17,0,M.pot);const pl=new THREE.Mesh(plantGeo(17,70,.14,.3,.06,.02),M.leaf);pl.position.y=2.25;g.add(pl)}
+  // ovens 5.28–6.48 (two 60 cm ovens side by side)
+  fv(5.28);fv(5.88);fv(6.48);fh(5.28,6.48,.85);fh(5.28,6.48,1.47);fh(5.28,6.48,2.05);fh(5.28,6.48,.45);
+  for(const z of [5.31,5.91]){aBox(8.0,z,8.016,z+.54,.88,1.44,M.black,{parent:col,cast:false});aBox(8.016,z+.03,8.03,z+.51,1.37,1.385,M.chromeDark,{parent:col,cast:false});aBox(8.016,z+.17,8.02,z+.37,1.4,1.43,M.screenBlue,{parent:col,cast:false})}
+  // wine fridge 6.48–6.9
+  aBox(7.6,6.5,8.0,6.88,.1,1.95,M.black,{parent:col,cast:false});aBox(8.0,6.5,8.016,6.88,.1,1.95,M.wineGlass,{parent:col,cast:false}).renderOrder=2;fh(6.48,6.9,2.05);fv(6.9);
+  for(let y=.2;y<1.85;y+=.12){aBox(7.62,6.52,8.0,6.86,y,y+.01,M.oak,{parent:col,cast:false});for(let k=0;k<4;k++){const b=new THREE.Mesh(new THREE.CylinderGeometry(.033,.033,.3,10),k%2?M.bottle:M.bottle2);b.rotation.z=Math.PI/2;b.position.set(7.8,y+.045,6.56+k*.085);col.add(b)}}
+  aBox(7.995,6.51,8.0,6.87,1.9,1.91,M.led,{parent:col,cast:false});
+  // fridge 6.9–7.86, two panel doors with long gold bar handles at the centre seam
+  fv(7.38,.05,2.05);fh(6.9,7.86,2.05);for(const z of [7.33,7.43]){aBox(8.012,z-.008,8.06,z+.008,.75,.78,M.gold,{parent:col,cast:false});aBox(8.012,z-.008,8.06,z+.008,1.92,1.95,M.gold,{parent:col,cast:false});aBox(8.045,z-.01,8.065,z+.01,.75,1.95,M.gold,{parent:col,cast:false})}
+  // island: natural marble waterfall to the floor, fluted oak under both overhangs with hidden light, seating on both sides
+  {const g=grp(9.82,4.81,0,'אי מטבח','118 × 224 × 94 ס״מ');const I=grp(0,0,0);aBox(9.52,3.75,10.12,5.87,.06,.88,K,{parent:I,collide:true});
+   aBox(10.12,3.76,10.135,5.86,.06,.84,M.slats,{parent:I,cast:false});aBox(9.505,3.76,9.52,5.86,.06,.84,M.slats,{parent:I,cast:false});
+   aBox(9.2,3.69,10.44,5.93,.88,.94,M.kmarble,{parent:I});aBox(9.2,3.69,10.44,3.75,0,.88,M.kmarble,{parent:I});aBox(9.2,5.87,10.44,5.93,0,.88,M.kmarble,{parent:I});
+   aBox(10.1,3.76,10.12,5.86,.85,.862,M.led,{parent:I,cast:false});aBox(9.52,3.76,9.54,5.86,.85,.862,M.led,{parent:I,cast:false});aBox(9.53,3.76,10.11,5.86,0,.06,seam,{parent:I,cast:false});
+   colliders.push([9.2,3.69,10.44,5.93]);
+   const d=grp(9.82,4.7);vaseBranches(d,0,.94,0,1.15);gc(d,.17,.17,.014,0,.94,.5,M.gold,32);gc(d,.05,.05,.1,-.05,.954,.5,M.glass,16);gc(d,.034,.034,.06,-.05,.956,.5,M.white,12);lathe(d,[[0,0],[.04,0],[.04,.16],[0,.16]],.07,.954,.48,M.pot)}
+  const stool=(x,z,rot)=>{const c=grp(x,z,rot,'כיסא בר מרופד','46 × 50 × 100 ס״מ');
+    for(const [a,b] of [[-.17,-.17],[.17,-.17],[-.17,.17],[.17,.17]]){const l=leg(c,a,b,.66,M.chromeDark,.009,.011);l.rotation.z=-a*.08;l.rotation.x=b*.08}
+    for(const z of [-.155,.155])gb(c,.34,.012,.012,0,.26,z,M.chromeDark);for(const x of [-.155,.155])gb(c,.012,.012,.34,x,.26,0,M.chromeDark);
+    rb(c,.46,.1,.44,0,.64,.01,M.boucle,.045,true,4);const bk=rb(c,.44,.36,.07,0,.72,-.2,M.boucle,.035,true,4);bk.rotation.x=-.12;
+    for(const s of [-1,1]){const w=rb(c,.06,.18,.3,s*.21,.72,-.07,M.boucle,.03,true,3);w.rotation.x=-.1}return c};
+  for(const z of [4.05,4.81,5.57]){stool(10.72,z,-Math.PI/2);stool(8.92,z,Math.PI/2)}colliders.push([10.48,3.8,10.98,5.85],[8.66,3.8,9.16,5.85]);
+  // counter decor like the reference: olive branches, soap bottles, small bowl
+  {const g=grp(7.75,2.2);vaseBranches(g,0,bh,0,.95);gc(g,.05,.05,.05,.2,bh,-.02,M.pot,16)}
+  {const g=grp(11.88,2.15);lathe(g,[[0,0],[.03,0],[.03,.16],[.01,.2],[0,.2]],0,bh,0,M.terracotta);lathe(g,[[0,0],[.03,0],[.03,.14],[.01,.18],[0,.18]],-.08,bh,.02,M.pot);gb(g,.2,.012,.12,-.3,bh,.05,M.oak)}
+  // ceiling: recessed linear LED strips and spots
   aBox(7.41,2.895,10.67,2.905,DROP-.02,DROP,M.led,{parent:ceilGroup,cast:false});aBox(10.665,2.9,10.675,5.45,DROP-.02,DROP,M.led,{parent:ceilGroup,cast:false});
-  aBox(8.6,4.2,10.9,4.23,H-.012,H-.002,M.led,{parent:ceilGroup,cast:false});aBox(8.6,5.8,10.9,5.83,H-.012,H-.002,M.led,{parent:ceilGroup,cast:false});
-  spotsGrid(7.6,2.3,10.6,2.8,5,1,DROP);spotsGrid(10.75,3.0,11.9,5.3,1,3,DROP);spotsGrid(8.6,3.2,10.4,6.6,2,3);
-  {const g=grp(0,0,0,'ארון נעליים','100 × 35 ס״מ');aBox(11.52,5.3,11.88,6.3,.12,.95,M.cab,{parent:g,collide:true});aBox(11.5,5.28,11.88,6.32,.95,.98,M.marble,{parent:g});
+  for(const z of [3.55,6.25])aBox(8.3,z-.015,10.6,z+.015,H-.012,H-.002,M.led,{parent:ceilGroup,cast:false});
+  spotsGrid(7.6,2.3,10.6,2.8,5,1,DROP);spotsGrid(10.75,3.0,11.9,5.3,1,3,DROP);spotsGrid(8.4,4.2,10.4,5.6,3,2);
+  {const g=grp(0,0,0,'ארון נעליים','100 × 36 ס״מ');aBox(11.52,5.3,11.88,6.3,.12,.95,K,{parent:g,collide:true});aBox(11.5,5.28,11.88,6.32,.95,.98,M.kmarble,{parent:g});
    vaseBranches(g,11.7,.98,5.5,.7);const mg=grp(11.995,5.8,-Math.PI/2,'מראה בכניסה','70 × 100 ס״מ');rb(mg,.7,1.0,.02,0,1.15,0,M.gold,.01);gb(mg,.64,.94,.01,0,1.18,.015,M.mirror,false)}
 }
 // ---- Dining
