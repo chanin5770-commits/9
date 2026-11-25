@@ -620,6 +620,16 @@
     if (sc.cap) ribbon(g, sc.cap, 1690, t, sc.start + 0.45, { size: 78 });
   }
 
+  function sceneSingle(g, t, sc) {
+    photoBg(g, t, sc.img);
+    const s = t - sc.start + 0.45, dur = sc.end - sc.start;
+    const e = spring(s - 0.1, 5, 8);
+    card(g, sc.img, 540, lerp(1300, 880, e), 1000, { scale: lerp(0.6, 1, e), rot: lerp(0.08, -0.015, e) + Math.sin(t * 0.7) * 0.006,
+      alpha: clamp(s / 0.25), z: lerp(1, 1.12, clamp(s / dur)), fx: sc.fx ?? 0.5, fy: sc.fy ?? 0.5, sheen: (s - 0.7) / 1.4 });
+    sparkBurst(g, t, sc.start + 0.2, 540, 880, 22, Math.round(sc.start), 600, 1.4);
+    if (sc.cap) ribbon(g, sc.cap, 1560, t, sc.start + 0.5, { size: 78 });
+  }
+
   function sceneCarousel(g, t, sc) {
     royalBg(g, t, { rays: 0.12, cy: 900 });
     floatingHei(g, t, 0.18);
@@ -649,36 +659,49 @@
     { n: 'p12_tiles', x: 540, y: 1430, w: 440, r: -0.03 },
   ];
 
+  const FIN2 = ['p15_treats1', 'p19_crown', 'p07_train2', 'p08_pointer', 'p03_tzedaka2', 'p13_floor_hei'];
+
   function drawFinale(g, t, sc) {
     const s = t - sc.start, b = B(t), fb = sc.finaleBar;
-    const pull = 1 - 0.12 * eInOut((b - fb - 6) / 3), fadeOut = prog(b, fb + 8.6, 1.4);
+    const FL = B(CFG.duration) - fb, hit = fb + Math.max(7, FL - 3), long = FL > 14;
+    const swap = long ? fb + Math.round(FL * 0.45) : 1e9;
+    const pull = 1 - 0.12 * eInOut((b - hit + 1) / 3), fadeOut = prog(b, hit + 1.6, Math.max(1, Math.min(1.4, B(CFG.duration) - hit - 1.7)));
     royalBg(g, t, { rays: 0.16, cy: 1000, stars: 1, parts: 1 });
     g.save(); g.translate(W / 2, H / 2); g.scale(pull, pull); g.translate(-W / 2, -H / 2);
+    const out = eInOut((b - swap) / 0.6);
     FIN.forEach((c, i) => {
-      const e = spring(s - 0.15 - i * BAR / 8, 5, 8), ang = (i / FIN.length) * 6.283;
+      const e = spring(s - 0.15 - i * BAR / 8, 5, 8) * (1 - out), ang = (i / FIN.length) * 6.283;
+      if (e <= 0.001 && out > 0) return;
       const bob = Math.sin(t * 1.2 + i) * 10;
       card(g, c.n, lerp(540 + Math.cos(ang) * 1300, c.x, e), lerp(960 + Math.sin(ang) * 1500, c.y, e) + bob, c.w,
         { rot: c.r + Math.sin(t * 0.9 + i) * 0.02, scale: lerp(0.3, 1, e), alpha: clamp((s - i * BAR / 8) / 0.2), sheen: ((t * 0.25 + i * 0.17) % 1.6) - 0.3, border: 11 });
+    });
+    if (b > swap) FIN2.forEach((n, i) => {
+      const c = FIN[i], e = spring(t - T(swap + 0.35) - i * BAR / 8, 5, 8), ang = (i / FIN.length) * 6.283 + 1.2;
+      const bob = Math.sin(t * 1.2 + i + 2) * 10;
+      card(g, n, lerp(540 + Math.cos(ang) * 1300, c.x, e), lerp(960 + Math.sin(ang) * 1500, c.y, e) + bob, c.w,
+        { rot: -c.r + Math.sin(t * 0.9 + i) * 0.02, scale: lerp(0.3, 1, e), alpha: clamp((t - T(swap + 0.35) - i * BAR / 8) / 0.2), sheen: ((t * 0.25 + i * 0.17) % 1.6) - 0.3, border: 11 });
     });
     // central hei with crown
     const hs = s - 0.2, hsc = lerp(0.2, 1, spring(hs, 4.5, 7));
     g.save(); g.globalCompositeOperation = 'lighter'; spr(g, SPR.glow, 540, 1010, 1200 * hsc, 0.55); g.restore();
     rays(g, 540, 1010, t * 1.6, 0.14, 18, '255,230,150');
     if (hs > 0) {
-      const beat = Math.exp(-((b * 4) % 1) * 4) * 0.025 * (b > fb && b < fb + 7 ? 1 : 0);
+      const beat = Math.exp(-((b * 4) % 1) * 4) * 0.025 * (b > fb && b < hit ? 1 : 0);
       letter3D(g, 'ה', 540, 1030, 470 * hsc * (1 + beat), { glow: 1, sheen: t * 0.4 });
       crown(g, 540, 1030 - 470 * hsc * 0.56 - 25, 250 * hsc, t, { alpha: clamp(hs / 0.3) });
     }
     wordsIn(g, 'כל הכבוד לצבי שלנו!', W / 2, 205, 98, t, T(fb + 0.5), { stag: 0.14 });
-    wordsIn(g, 'מלך האות ה׳', W / 2, 1690, 132, t, T(fb + 2), { stag: 0.2 });
-    wordsIn(g, 'איזה מלך של אותיות!', W / 2, 1838, 82, t, T(fb + 4), { stag: 0.14, fill: 'white', glowColor: 'rgba(140,200,255,0.8)' });
+    wordsIn(g, 'מלך האות ה׳', W / 2, 1690, 132, t, T(fb + (long ? 2.5 : 2)), { stag: 0.2 });
+    wordsIn(g, 'איזה מלך של אותיות!', W / 2, 1838, 82, t, T(fb + (long ? 5 : 4)), { stag: 0.14, fill: 'white', glowColor: 'rgba(140,200,255,0.8)' });
     confetti(g, t, T(fb) + 0.05, 540, 2000, 140, 61, { speed: 2600, spread: 0.5 });
-    confetti(g, t, T(fb + 4), 540, -60, 120, 62, { speed: 260, spread: 3.1, xs: 1100, life: 4.5 });
-    confetti(g, t, T(fb + 7), 150, 1980, 100, 63, { speed: 2500, spread: 0.4 });
-    confetti(g, t, T(fb + 7), 930, 1980, 100, 64, { speed: 2500, spread: 0.4 });
-    sparkBurst(g, t, T(fb + 7), 540, 1010, 50, 4800, 700, 2.0);
+    confetti(g, t, T(fb + (long ? 5 : 4)), 540, -60, 120, 62, { speed: 260, spread: 3.1, xs: 1100, life: 4.5 });
+    confetti(g, t, T(hit), 150, 1980, 100, 63, { speed: 2500, spread: 0.4 });
+    confetti(g, t, T(hit), 930, 1980, 100, 64, { speed: 2500, spread: 0.4 });
+    if (long) { confetti(g, t, T(swap + 0.3), 540, -60, 130, 65, { speed: 260, spread: 3.1, xs: 1100, life: 4.5 }); sparkBurst(g, t, T(swap + 0.3), 540, 1010, 40, 4700, 650, 1.8); }
+    sparkBurst(g, t, T(hit), 540, 1010, 50, 4800, 700, 2.0);
     g.restore();
-    flash(g, 0.5 * Math.exp(-Math.max(0, (b - fb - 7) * BAR) * 3) * (b >= fb + 7 ? 1 : 0));
+    flash(g, 0.5 * Math.exp(-Math.max(0, (b - hit) * BAR) * 3) * (b >= hit ? 1 : 0));
     flash(g, 0.45 * Math.exp(-Math.max(0, s) * 4));
     if (fadeOut > 0) { g.fillStyle = `rgba(3,8,30,${eInOut(fadeOut)})`; g.fillRect(0, 0, W, H); }
   }
@@ -701,10 +724,32 @@
   ];
   const BASE_BARS = 51;
 
+  // Plan for the real song (152 BPM, 2:46): scene starts follow its sections
+  // 27 = chorus (objects), 57 = dip, 60 = peak, 73 = break, 82 = final section -> finale
+  const LONG_PLAN = [
+    [4, { kind: 'full', img: 'p08_pointer', z0: 1.0, z1: 1.12, fx: 0.5, fy: 0.55, cap: 'המלך מצביע על האותיות', capY: 1760, trans: 'curtain' }],
+    [4, { kind: 'full', img: 'p19_crown', z0: 1.04, z1: 1.14, fx: 0.72, fy: 0.42, fy1: 0.5, cap: 'מכינים כתר מלכותי', capY: 1740, trans: 'goldWipe' }],
+    [4, { kind: 'stack', imgs: ['p18_poster', 'p14_coloring3'], f: [[0.5, 0.4], [0.4, 0.35]], cap: 'צובעים את האות ה׳', trans: 'album' }],
+    [5, { kind: 'object', img: 'p05_hege', z: 1.2, fx: 0.52, fy: 0.36, ou: 0.556, ov: 0.452, or: 255, first: 'הֶ', rest: 'גֶה', trans: 'portal' }],
+    [5, { kind: 'object', img: 'p01_helicopter', z: 1.18, fx: 0.42, fy: 0.42, ou: 0.337, ov: 0.556, or: 170, first: 'הֶ', rest: 'לִיקוֹפְּטֶר', trans: 'zoom' }],
+    [4, { kind: 'stack', imgs: ['p12_tiles', 'p13_floor_hei'], f: [[0.5, 0.5], [0.6, 0.45]], cap: 'בונים את האות ה׳', trans: 'sparkle' }],
+    [4, { kind: 'carousel', imgs: ['p09_coloring1', 'p10_coloring2', 'p16_puzzle1'], cap: 'כל הגן חוגג את האות ה׳', trans: 'goldWipe' }],
+    [4, { kind: 'pair', imgs: ['p02_tzedaka1', 'p03_tzedaka2'], cap: 'נותנים צדקה', trans: 'sparkle' }],
+    [4, { kind: 'stack', imgs: ['p06_train1', 'p07_train2'], f: [[0.45, 0.45], [0.6, 0.45]], cap: 'רכבת של שמחה!', trans: 'zoom' }],
+    [4, { kind: 'single', img: 'p11_group', fx: 0.4, fy: 0.45, cap: 'חברים טובים יחד', trans: 'album' }],
+    [3, { kind: 'full', img: 'p04_portrait', z0: 1.0, z1: 1.08, fx: 0.48, fy: 0.3, cap: 'צבי – מלך האות ה׳', capY: 1770, trans: 'dissolve' }],
+    [4, { kind: 'full', img: 'p15_treats1', z0: 1.15, z1: 1.02, fx: 0.35, fy: 0.4, cap: 'מחלקים כיבוד לחברים', capY: 1770, trans: 'goldWipe' }],
+    [4, { kind: 'full', img: 'p20_treats2', z0: 1.0, z1: 1.12, fx: 0.3, fy: 0.42, cap: 'שמחה לכל החברים', capY: 1770, trans: 'portal' }],
+    [5, { kind: 'carousel', imgs: ['p05_hege', 'p01_helicopter', 'p04_portrait'], cap: 'צבי המלך שלנו', trans: 'zoom' }],
+    [4, { kind: 'single', img: 'p17_puzzle2', cap: 'מרכיבים את האותיות', trans: 'dissolve' }],
+    [5, { kind: 'pair', imgs: ['p08_pointer', 'p19_crown'], cap: 'יום מלכותי בגן', trans: 'album' }],
+  ];
+
   function buildTimeline() {
     const totalBars = Math.floor((CFG.duration - OFF) / BAR + 1e-6);
     let extra = totalBars - BASE_BARS;
-    const sc = PHOTO_SCENES.map((p) => ({ ...p }));
+    let sc = PHOTO_SCENES.map((p) => ({ ...p }));
+    if (totalBars >= 90) { sc = LONG_PLAN.map(([bars, p]) => ({ ...p, bars })); extra = 0; }
     for (let i = 0; extra !== 0 && i < 400; i++) {
       const s = sc[i % sc.length];
       if (extra > 0) { s.bars += 1; extra--; } else if (s.bars > 1) { s.bars -= 1; extra++; }
@@ -725,6 +770,7 @@
       case 'pair': return scenePair(g, t, sc);
       case 'stack': return sceneStack(g, t, sc);
       case 'carousel': return sceneCarousel(g, t, sc);
+      case 'single': return sceneSingle(g, t, sc);
       case 'finale': return drawFinale(g, t, sc);
     }
   }
